@@ -1,0 +1,86 @@
+version: 2
+updates:
+  # Enable version updates for NuGet
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+    open-pull-requests-limit: 10
+    pull-request-branch-name:
+      separator: "/"
+    reviewers:
+      - "ertonjm"
+    labels:
+      - "dependencies"
+      - "chore"
+    commit-message:
+      prefix: "chore(deps):"
+      prefix-development: "chore(deps-dev):"
+      include: "scope"
+    rebase-strategy: "auto"
+    allow:
+      - dependency-type: "all"
+    ignore:
+      # Ignorar versões pre-release exceto patches críticos
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+    # Agrupar updates por tipo
+    groups:
+      development-dependencies:
+        dependency-types:
+          - "development"
+      production-dependencies:
+        dependency-types:
+          - "production"
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    pull-request-branch-name:
+      separator: "/"
+    reviewers:
+      - "ertonjm"
+    labels:
+      - "ci/cd"
+      - "chore"
+    commit-message:
+      prefix: "ci:"
+
+  # Enable security updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    labels:
+      - "security"
+      - "critical"
+    open-pull-requests-limit: 5
+
+  # Enable version updates for .NET
+  - package-ecosystem: "dotnet"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      day: "sunday"
+      time: "05:00"
+    reviewers:
+      - "ertonjm"
+    labels:
+      - "dependencies"
+      - ".net"
+
+# Security updates configuration
+# Dependabot will automatically create PRs for security vulnerabilities
+security-updates:
+  enabled: true
+  # High and Critical vulnerabilities: immediate
+  # Medium vulnerabilities: weekly
+  # Low vulnerabilities: monthly

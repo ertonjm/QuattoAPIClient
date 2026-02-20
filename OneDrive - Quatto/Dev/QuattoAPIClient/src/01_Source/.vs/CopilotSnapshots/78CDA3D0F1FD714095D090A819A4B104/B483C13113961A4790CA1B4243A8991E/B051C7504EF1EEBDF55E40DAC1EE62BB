@@ -1,0 +1,423 @@
+﻿/*
+═══════════════════════════════════════════════════════════════════
+Quatto API Client - API Connection Manager
+Versão: 1.0.0
+Projeto: SESC-DF Data Warehouse
+Autor: Erton Miranda / Quatto Consultoria
+Data: Fevereiro 2026
+═══════════════════════════════════════════════════════════════════
+
+DESCRIÇÃO:
+Connection Manager customizado para gerenciar autenticação e headers
+de APIs REST. Suporta múltiplos métodos de autenticação:
+- Bearer Token (fixo)
+- API Key (header customizado)
+- OAuth2 Client Credentials (com cache e refresh automático)
+
+SEGURANÇA:
+- Tokens devem ser armazenados em Parâmetros de Projeto SSISDB (Sensitive=true)
+- Logs NUNCA exibem tokens ou secrets
+- Suporte a modo Sandbox para desenvolvimento/testes
+
+═══════════════════════════════════════════════════════════════════
+*/
+
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
+using Microsoft.SqlServer.Dts.Runtime;
+using QuattoAPIClient.ConnectionManager;
+
+namespace QuattoAPIClient.ConnectionManager
+{
+    /// <summary>
+    /// API Connection Manager - Gerencia autenticação e configurações HTTP
+    /// </summary>
+    [DtsConnection(
+        ConnectionType = "API",
+        DisplayName = "API Connection",
+        Description = "Gerencia autenticação (Bearer/ApiKey/OAuth2) e headers padrão para APIs REST.",
+        IconResource = "QuattoAPIClient.ConnectionManager.Resources.icon.ico")]
+    public class ApiConnectionManager : ConnectionManagerBase
+    {
+        #region Private Fields
+
+        private OAuth2TokenManager? _tokenManager;
+        private static readonly object _tokenLock = new object();
+
+        #endregion
+
+        #region Public Properties
+
+        /// <summary>
+        /// Tipo de autenticação: ApiKey, Bearer, OAuth2ClientCredentials
+        /// </summary>
+        public string AuthType { get; set; } = "Bearer";
+
+        /// <summary>
+        /// URL do endpoint de token OAuth2 (ex: https://api.exemplo.com/oauth/token)
+        /// </summary>
+        public string TokenEndpoint { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Client ID para OAuth2 (SENSITIVE - usar parâmetro SSISDB)
+        /// </summary>
+        public string ClientId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Client Secret para OAuth2 (SENSITIVE - usar parâmetro SSISDB)
+        /// </summary>
+        public string ClientSecret { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Scope para OAuth2 (opcional, ex: "api.read api.write")
+        /// </summary>
+        public string Scope { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Nome do header para API Key (ex: "x-api-key", "Authorization")
+        /// </summary>
+        public string ApiKeyHeader { get; set; } = "x-api-key";
+
+        /// <summary>
+        /// Valor da API Key (SENSITIVE - usar parâmetro SSISDB)
+        /// </summary>
+        public string ApiKeyValue { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Bearer Token fixo (SENSITIVE - usar parâmetro SSISDB)
+        /// </summary>
+        public string BearerToken { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Timeout em segundos para requisições HTTP
+        /// </summary>
+        public int TimeoutSeconds { get; set; } = 100;
+
+        /// <summary>
+        /// Headers padrão em formato JSON (ex: {"Accept":"application/json","User-Agent":"Quatto-SSIS/1.0"})
+        /// </summary>
+        public string DefaultHeadersJson { get; set; } = @"{""Accept"":""application/json"",""User-Agent"":""Quatto-SSIS-API/1.0""}";
+
+        /// <summary>
+        /// Modo Sandbox (true = ambiente de testes, false = produção)
+        /// </summary>
+        public bool SandboxMode { get; set; } = false;
+
+        /// <summary>
+        /// URL base para modo Sandbox (opcional, se diferente da URL principal)
+        /// </summary>
+        public string SandboxBaseUrl { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Habilitar logs detalhados (atenção: pode expor informações sensíveis se não configurado corretamente)
+        /// </summary>
+        public bool EnableDetailedLogging { get; set; } = false;
+
+        #endregion
+
+        #region ConnectionManagerBase Implementation
+
+        /// <summary>
+        /// Adquire a conexão para o Connection Manager de API.
+        /// Retorna a própria instância para que componentes possam construir o HttpClient.
+        /// </summary>
+        /// <param name="txn">Transação (não utilizada neste Connection Manager).</param>
+        /// <returns>Instância de <see cref="ApiConnectionManager"/> para uso pelos componentes.</returns>
+        public override object AcquireConnection(object txn)
+        {
+            // Connection Manager não mantém conexão persistente
+            // Retorna self para que componentes possam chamar BuildHttpClient()
+            return this;
+        }
+
+        /// <summary>
+        /// Libera a conexão adquirida pelo Connection Manager de API.
+        /// Não há recursos a serem liberados, pois o HttpClient é descartado pelos componentes.
+        /// </summary>
+        /// <param name="connection">Objeto de conexão a ser liberado.</param>
+        public override void ReleaseConnection(object connection)
+        {
+            // Nada a fazer - HttpClient é descartado pelos componentes
+        }
+
+        /// <summary>
+        /// Valida a configuração do Connection Manager de API.
+        /// </summary>
+        /// <param name="infoEvents">Interface para notificação de eventos de validação.</param>
+        /// <returns>Resultado da validação (<see cref="Microsoft.SqlServer.Dts.Runtime.DTSExecResult"/>).</returns>
+        public override DTSExecResult Validate(IDTSInfoEvents infoEvents)
+        {
+            bool fireAgain = false;
+
+            // Validate AuthType
+            string authType = AuthType.ToUpperInvariant();
+            if (authType != "APIKEY" && authType != "BEARER" && authType != "OAUTH2CLIENTCREDENTIALS")
+            {
+                infoEvents.FireError(0, "ApiConnectionManager",
+                    $"AuthType inválido: '{AuthType}'. Valores aceitos: ApiKey, Bearer, OAuth2ClientCredentials",
+                    "", 0);
+                return DTSExecResult.Failure;
+            }
+
+            // Validate specific auth configurations
+            switch (authType)
+            {
+                case "APIKEY":
+                    if (string.IsNullOrWhiteSpace(ApiKeyHeader) || string.IsNullOrWhiteSpace(ApiKeyValue))
+                    {
+                        infoEvents.FireError(0, "ApiConnectionManager",
+                            "AuthType=ApiKey requer ApiKeyHeader e ApiKeyValue configurados.",
+                            "", 0);
+                        return DTSExecResult.Failure;
+                    }
+                    break;
+
+                case "BEARER":
+                    if (string.IsNullOrWhiteSpace(BearerToken))
+                    {
+                        infoEvents.FireError(0, "ApiConnectionManager",
+                            "AuthType=Bearer requer BearerToken configurado.",
+                            "", 0, ref fireAgain);
+                        return DTSExecResult.Failure;
+                    }
+                    break;
+
+                case "OAUTH2CLIENTCREDENTIALS":
+                    if (string.IsNullOrWhiteSpace(TokenEndpoint))
+                    {
+                        infoEvents.FireError(0, "ApiConnectionManager",
+                            "AuthType=OAuth2ClientCredentials requer TokenEndpoint configurado.",
+                            "", 0, ref fireAgain);
+                        return DTSExecResult.Failure;
+                    }
+                    if (string.IsNullOrWhiteSpace(ClientId) || string.IsNullOrWhiteSpace(ClientSecret))
+                    {
+                        infoEvents.FireError(0, "ApiConnectionManager",
+                            "AuthType=OAuth2ClientCredentials requer ClientId e ClientSecret configurados.",
+                            "", 0, ref fireAgain);
+                        return DTSExecResult.Failure;
+                    }
+                    break;
+            }
+
+            // Validate DefaultHeadersJson
+            if (!string.IsNullOrWhiteSpace(DefaultHeadersJson))
+            {
+                try
+                {
+                    JsonDocument.Parse(DefaultHeadersJson);
+                }
+                catch (JsonException)
+                {
+                    infoEvents.FireError(0, "ApiConnectionManager",
+                        "DefaultHeadersJson não é um JSON válido.",
+                        "", 0, ref fireAgain);
+                    return DTSExecResult.Failure;
+                }
+            }
+
+            infoEvents.FireInformation(0, "ApiConnectionManager",
+                $"✓ Validação OK. AuthType={AuthType}, Sandbox={SandboxMode}, Timeout={TimeoutSeconds}s",
+                "", 0, ref fireAgain);
+
+            return DTSExecResult.Success;
+        }
+
+        #endregion
+
+        #region Public Methods
+
+        /// <summary>
+        /// Constrói e configura um HttpClient com autenticação e headers
+        /// </summary>
+        public HttpClient BuildHttpClient()
+        {
+            var handler = new HttpClientHandler
+            {
+                AllowAutoRedirect = true,
+                MaxAutomaticRedirections = 5,
+                UseCookies = false
+            };
+
+            var httpClient = new HttpClient(handler)
+            {
+                Timeout = TimeSpan.FromSeconds(TimeoutSeconds)
+            };
+
+            // Apply default headers
+            ApplyDefaultHeaders(httpClient);
+
+            // Apply authentication
+            ApplyAuthentication(httpClient);
+
+            if (EnableDetailedLogging)
+            {
+                LogConfiguration();
+            }
+
+            return httpClient;
+        }
+
+        /// <summary>
+        /// Testa conectividade com a API (opcional - chamado pelo componente em design-time)
+        /// </summary>
+        public bool TestConnection(out string errorMessage)
+        {
+            errorMessage = string.Empty;
+
+            try
+            {
+                using (var client = BuildHttpClient())
+                {
+                    // Se OAuth2, tenta adquirir token
+                    if (AuthType.Equals("OAuth2ClientCredentials", StringComparison.OrdinalIgnoreCase))
+                    {
+                        EnsureOAuth2Token();
+                    }
+
+                    errorMessage = "✓ Connection Manager configurado com sucesso. " +
+                                 "ATENÇÃO: Teste completo de API deve ser feito pelo componente com URL real.";
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"✗ Erro ao configurar Connection Manager: {ex.Message}";
+                return false;
+            }
+        }
+
+        #endregion
+
+        #region Private Methods
+
+        private void ApplyDefaultHeaders(HttpClient client)
+        {
+            if (string.IsNullOrWhiteSpace(DefaultHeadersJson))
+                return;
+
+            try
+            {
+                using (JsonDocument doc = JsonDocument.Parse(DefaultHeadersJson))
+                {
+                    foreach (JsonProperty prop in doc.RootElement.EnumerateObject())
+                    {
+                        string headerName = prop.Name;
+                        string headerValue = prop.Value.GetString() ?? string.Empty;
+
+                        if (!string.IsNullOrWhiteSpace(headerValue))
+                        {
+                            // Try to add to default headers first
+                            if (!client.DefaultRequestHeaders.TryAddWithoutValidation(headerName, headerValue))
+                            {
+                                // If fails, might be a content header - will be added per request
+                                if (EnableDetailedLogging)
+                                {
+                                    Console.WriteLine($"Header '{headerName}' will be added per-request (not a default header)");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (JsonException ex)
+            {
+                throw new InvalidOperationException($"Erro ao parsear DefaultHeadersJson: {ex.Message}", ex);
+            }
+        }
+
+        private void ApplyAuthentication(HttpClient client)
+        {
+            string authType = AuthType.ToUpperInvariant();
+
+            switch (authType)
+            {
+                case "APIKEY":
+                    if (!string.IsNullOrWhiteSpace(ApiKeyHeader) && !string.IsNullOrWhiteSpace(ApiKeyValue))
+                    {
+                        client.DefaultRequestHeaders.TryAddWithoutValidation(ApiKeyHeader, ApiKeyValue);
+                    }
+                    break;
+
+                case "BEARER":
+                    if (!string.IsNullOrWhiteSpace(BearerToken))
+                    {
+                        client.DefaultRequestHeaders.Authorization =
+                            new AuthenticationHeaderValue("Bearer", BearerToken);
+                    }
+                    break;
+
+                case "OAUTH2CLIENTCREDENTIALS":
+                    string token = EnsureOAuth2Token();
+                    if (!string.IsNullOrWhiteSpace(token))
+                    {
+                        client.DefaultRequestHeaders.Authorization =
+                            new AuthenticationHeaderValue("Bearer", token);
+                    }
+                    break;
+            }
+        }
+
+        private string EnsureOAuth2Token()
+        {
+            lock (_tokenLock)
+            {
+                if (_tokenManager == null)
+                {
+                    _tokenManager = new OAuth2TokenManager(
+                        TokenEndpoint,
+                        ClientId,
+                        ClientSecret,
+                        Scope,
+                        EnableDetailedLogging
+                    );
+                }
+
+                return _tokenManager.GetAccessToken();
+            }
+        }
+
+        private void LogConfiguration()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("═══════════════════════════════════════");
+            sb.AppendLine("API Connection Manager - Configuração");
+            sb.AppendLine("═══════════════════════════════════════");
+            sb.AppendLine($"AuthType: {AuthType}");
+            sb.AppendLine($"SandboxMode: {SandboxMode}");
+            sb.AppendLine($"Timeout: {TimeoutSeconds}s");
+
+            switch (AuthType.ToUpperInvariant())
+            {
+                case "APIKEY":
+                    sb.AppendLine($"ApiKeyHeader: {ApiKeyHeader}");
+                    sb.AppendLine($"ApiKeyValue: [REDACTED - {ApiKeyValue?.Length ?? 0} chars]");
+                    break;
+                case "BEARER":
+                    sb.AppendLine($"BearerToken: [REDACTED - {BearerToken?.Length ?? 0} chars]");
+                    break;
+                case "OAUTH2CLIENTCREDENTIALS":
+                    sb.AppendLine($"TokenEndpoint: {TokenEndpoint}");
+                    sb.AppendLine($"ClientId: {ClientId}");
+                    sb.AppendLine($"ClientSecret: [REDACTED - {ClientSecret?.Length ?? 0} chars]");
+                    sb.AppendLine($"Scope: {Scope}");
+                    break;
+            }
+
+            sb.AppendLine($"DefaultHeaders: {DefaultHeadersJson}");
+            sb.AppendLine("═══════════════════════════════════════");
+
+            Console.WriteLine(sb.ToString());
+        }
+
+        #endregion
+    }
+
+    // Note: OAuth2TokenManager is implemented as a standalone class in OAuth2TokenManager.cs
+    // to avoid duplicate definitions when the project includes both files.
+}

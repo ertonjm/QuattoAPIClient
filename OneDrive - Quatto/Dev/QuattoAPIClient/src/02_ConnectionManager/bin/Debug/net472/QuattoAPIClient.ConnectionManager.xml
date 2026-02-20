@@ -1,0 +1,181 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>QuattoAPIClient.ConnectionManager</name>
+    </assembly>
+    <members>
+        <member name="T:QuattoAPIClient.ConnectionManager.ApiConnectionManager">
+            <summary>
+            API Connection Manager - Gerencia autenticação e configurações HTTP
+            </summary>
+        </member>
+        <member name="P:QuattoAPIClient.ConnectionManager.ApiConnectionManager.AuthType">
+            <summary>
+            Tipo de autenticação: ApiKey, Bearer, OAuth2ClientCredentials
+            </summary>
+        </member>
+        <member name="P:QuattoAPIClient.ConnectionManager.ApiConnectionManager.TokenEndpoint">
+            <summary>
+            URL do endpoint de token OAuth2 (ex: https://api.exemplo.com/oauth/token)
+            </summary>
+        </member>
+        <member name="P:QuattoAPIClient.ConnectionManager.ApiConnectionManager.ClientId">
+            <summary>
+            Client ID para OAuth2 (SENSITIVE - usar parâmetro SSISDB)
+            </summary>
+        </member>
+        <member name="P:QuattoAPIClient.ConnectionManager.ApiConnectionManager.ClientSecret">
+            <summary>
+            Client Secret para OAuth2 (SENSITIVE - usar parâmetro SSISDB)
+            </summary>
+        </member>
+        <member name="P:QuattoAPIClient.ConnectionManager.ApiConnectionManager.Scope">
+            <summary>
+            Scope para OAuth2 (opcional, ex: "api.read api.write")
+            </summary>
+        </member>
+        <member name="P:QuattoAPIClient.ConnectionManager.ApiConnectionManager.ApiKeyHeader">
+            <summary>
+            Nome do header para API Key (ex: "x-api-key", "Authorization")
+            </summary>
+        </member>
+        <member name="P:QuattoAPIClient.ConnectionManager.ApiConnectionManager.ApiKeyValue">
+            <summary>
+            Valor da API Key (SENSITIVE - usar parâmetro SSISDB)
+            </summary>
+        </member>
+        <member name="P:QuattoAPIClient.ConnectionManager.ApiConnectionManager.BearerToken">
+            <summary>
+            Bearer Token fixo (SENSITIVE - usar parâmetro SSISDB)
+            </summary>
+        </member>
+        <member name="P:QuattoAPIClient.ConnectionManager.ApiConnectionManager.TimeoutSeconds">
+            <summary>
+            Timeout em segundos para requisições HTTP
+            </summary>
+        </member>
+        <member name="P:QuattoAPIClient.ConnectionManager.ApiConnectionManager.DefaultHeadersJson">
+            <summary>
+            Headers padrão em formato JSON (ex: {"Accept":"application/json","User-Agent":"Quatto-SSIS/1.0"})
+            </summary>
+        </member>
+        <member name="P:QuattoAPIClient.ConnectionManager.ApiConnectionManager.SandboxMode">
+            <summary>
+            Modo Sandbox (true = ambiente de testes, false = produção)
+            </summary>
+        </member>
+        <member name="P:QuattoAPIClient.ConnectionManager.ApiConnectionManager.SandboxBaseUrl">
+            <summary>
+            URL base para modo Sandbox (opcional, se diferente da URL principal)
+            </summary>
+        </member>
+        <member name="P:QuattoAPIClient.ConnectionManager.ApiConnectionManager.EnableDetailedLogging">
+            <summary>
+            Habilitar logs detalhados (atenção: pode expor informações sensíveis se não configurado corretamente)
+            </summary>
+        </member>
+        <member name="M:QuattoAPIClient.ConnectionManager.ApiConnectionManager.AcquireConnection(System.Object)">
+            <summary>
+            Adquire a conexão para o Connection Manager de API.
+            Retorna a própria instância para que componentes possam construir o HttpClient.
+            </summary>
+            <param name="txn">Transação (não utilizada neste Connection Manager).</param>
+            <returns>Instância de <see cref="T:QuattoAPIClient.ConnectionManager.ApiConnectionManager"/> para uso pelos componentes.</returns>
+        </member>
+        <member name="M:QuattoAPIClient.ConnectionManager.ApiConnectionManager.ReleaseConnection(System.Object)">
+            <summary>
+            Libera a conexão adquirida pelo Connection Manager de API.
+            Não há recursos a serem liberados, pois o HttpClient é descartado pelos componentes.
+            </summary>
+            <param name="connection">Objeto de conexão a ser liberado.</param>
+        </member>
+        <member name="M:QuattoAPIClient.ConnectionManager.ApiConnectionManager.Validate(Microsoft.SqlServer.Dts.Runtime.IDTSInfoEvents)">
+            <summary>
+            Valida a configuração do Connection Manager de API.
+            </summary>
+            <param name="infoEvents">Interface para notificação de eventos de validação.</param>
+            <returns>Resultado da validação (<see cref="T:Microsoft.SqlServer.Dts.Runtime.DTSExecResult"/>).</returns>
+        </member>
+        <member name="M:QuattoAPIClient.ConnectionManager.ApiConnectionManager.BuildHttpClient">
+            <summary>
+            Constrói e configura um HttpClient com autenticação e headers
+            </summary>
+        </member>
+        <member name="M:QuattoAPIClient.ConnectionManager.ApiConnectionManager.TestConnection(System.String@)">
+            <summary>
+            Testa conectividade com a API (opcional - chamado pelo componente em design-time)
+            </summary>
+        </member>
+        <member name="T:QuattoAPIClient.ConnectionManager.OAuth2TokenManager">
+            <summary>
+            Gerenciador de tokens OAuth2 Client Credentials (standalone)
+            </summary>
+        </member>
+        <member name="M:QuattoAPIClient.ConnectionManager.OAuth2TokenManager.#ctor(System.String,System.String,System.String,System.String,System.Boolean,System.Int32)">
+            <summary>
+            Inicializa uma nova instância de <see cref="T:QuattoAPIClient.ConnectionManager.OAuth2TokenManager"/>.
+            </summary>
+            <param name="tokenEndpoint">URL do endpoint de token OAuth2.</param>
+            <param name="clientId">Client ID do OAuth2.</param>
+            <param name="clientSecret">Client Secret do OAuth2.</param>
+            <param name="scope">Escopo opcional para o token.</param>
+            <param name="enableLogging">Habilita ou desabilita o logging.</param>
+            <param name="bufferMinutes">Minutos de buffer antes da expiração para renovação do token.</param>
+        </member>
+        <member name="M:QuattoAPIClient.ConnectionManager.OAuth2TokenManager.GetAccessToken">
+            <summary>
+            Obtém access token (com cache e refresh automático)
+            </summary>
+        </member>
+        <member name="M:QuattoAPIClient.ConnectionManager.OAuth2TokenManager.RefreshToken">
+            <summary>
+            Força refresh do token
+            </summary>
+        </member>
+        <member name="M:QuattoAPIClient.ConnectionManager.OAuth2TokenManager.InvalidateToken">
+            <summary>
+            Invalida token em cache
+            </summary>
+        </member>
+        <member name="M:QuattoAPIClient.ConnectionManager.OAuth2TokenManager.HasValidToken">
+            <summary>
+            Verifica se tem token válido em cache
+            </summary>
+        </member>
+        <member name="M:QuattoAPIClient.ConnectionManager.OAuth2TokenManager.GetTimeToExpiration">
+            <summary>
+            Retorna tempo até expiração do token
+            </summary>
+        </member>
+        <member name="M:QuattoAPIClient.ConnectionManager.OAuth2TokenManager.AcquireNewToken">
+            <summary>
+            Adquire novo token do endpoint OAuth2
+            </summary>
+        </member>
+        <member name="T:QuattoAPIClient.ConnectionManager.TokenRefreshHandler">
+             <summary>
+             DelegatingHandler que:
+             1) injeta um token Bearer válido antes de cada chamada (via OAuth2TokenManager),
+             2) renova proativamente se o token estiver próximo do vencimento,
+             3) em caso de 401, força um refresh e reenvia a requisição uma única vez.
+            
+             Observações:
+             - Implementação síncrona para compatibilidade com SSIS (.NET Framework 4.7.2).
+             - Não registra (loga) segredos. Evite imprimir tokens em logs.
+             - Retry é intencionalmente 1x para prevenir loops em credenciais inválidas.
+             </summary>
+        </member>
+        <member name="M:QuattoAPIClient.ConnectionManager.TokenRefreshHandler.#ctor(QuattoAPIClient.ConnectionManager.OAuth2TokenManager,System.Boolean)">
+            <param name="tokenManager">Instância responsável por obter/renovar o access token.</param>
+            <param name="retryOnUnauthorized">
+            Se true, ao receber 401 o handler força refresh e reenvia a requisição uma vez.
+            </param>
+        </member>
+        <member name="M:QuattoAPIClient.ConnectionManager.TokenRefreshHandler.SendAsync(System.Net.Http.HttpRequestMessage,System.Threading.CancellationToken)">
+            <summary>
+            Envia a requisição garantindo token válido e aplicação do retry em caso de 401.
+            Implementado de forma assíncrona usando SendAsync.
+            </summary>
+        </member>
+    </members>
+</doc>

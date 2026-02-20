@@ -1,0 +1,127 @@
+# Git Ignore Configuration for Quatto API Client
+
+# Build Results
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+*.log
+
+# Visual Studio
+.vs/
+.vscode/
+*.sln.docstates
+*.user
+*.userosscache
+*.suo
+*.sln.iml
+.idea/
+
+# ReSharper
+.resharper
+.resharper.user
+_ReSharper*/
+*.resharper
+*.resharper.user
+
+# NuGet
+*.nupkg
+*.nuget.props
+*.nuget.targets
+packages/
+.nuget/
+
+# Build artifacts
+Release/
+Debug/
+x64/
+x86/
+*.dll
+*.exe
+*.pdb
+
+# Test Coverage
+coverage.xml
+coverage/
+*.coverage
+OpenCover/
+
+# Rider
+.idea/
+*.sln.iml
+
+# Azure DevOps
+.vsts-ci.yml
+azure-pipelines.yml.bak
+
+# GitHub
+.github/secrets/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+appsettings.local.json
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.vscode/extensions.json
+.vscode/launch.json
+.vscode/tasks.json
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Build
+out/
+dist/
+build/
+
+# Test
+TestResults/
+*.trx
+coverage.*
+
+# Documentation
+site/
+docs/_build/
+
+# Backup files
+*.backup
+*.bk
+*.orig
+
+# Lock files (opcional - descomente se necessário)
+# packages.lock.json
+
+# Ignore specific sensitive files
+appsettings.Production.json
+web.config
+.credentials
+.ssh/
+*.key
+*.pem

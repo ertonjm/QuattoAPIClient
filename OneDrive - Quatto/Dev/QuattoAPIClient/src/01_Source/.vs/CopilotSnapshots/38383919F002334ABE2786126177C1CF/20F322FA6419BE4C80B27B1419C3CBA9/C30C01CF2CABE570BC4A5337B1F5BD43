@@ -1,0 +1,243 @@
+﻿/*
+═══════════════════════════════════════════════════════════════════
+Quatto API Client - OAuth2 Token Manager (Standalone)
+Versão: 1.0.0
+Autor: Erton Miranda / Quatto Consultoria
+═══════════════════════════════════════════════════════════════════
+
+DESCRIÇÃO:
+Gerenciador standalone de tokens OAuth2 Client Credentials.
+Separado do ConnectionManager para facilitar testes e reuso.
+
+FUNCIONALIDADES:
+- Token acquisition com client_credentials flow
+- Cache de tokens com refresh automático
+- Thread-safe token management
+- Logging configurável
+
+NOTA: Este arquivo é uma versão standalone. O OAuth2TokenManager
+também está incluído no ApiConnectionManager.cs como classe interna.
+═══════════════════════════════════════════════════════════════════
+*/
+
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Text.Json;
+using System.Threading;
+using QuattoAPIClient.ConnectionManager;
+
+namespace QuattoAPIClient.ConnectionManager
+{
+    /// <summary>
+    /// Gerenciador de tokens OAuth2 Client Credentials (standalone)
+    /// </summary>
+    public class OAuth2TokenManager
+    {
+        private readonly string _tokenEndpoint;
+        private readonly string _clientId;
+        private readonly string _clientSecret;
+        private readonly string _scope;
+        private readonly bool _enableLogging;
+        private readonly int _bufferMinutes;
+
+        private string? _cachedToken;
+        private DateTime _tokenExpiration = DateTime.MinValue;
+        private readonly object _lock = new object();
+
+        public OAuth2TokenManager(
+            string tokenEndpoint,
+            string clientId,
+            string clientSecret,
+            string? scope = null,
+            bool enableLogging = false,
+            int bufferMinutes = 5)
+        {
+            _tokenEndpoint = tokenEndpoint ?? throw new ArgumentNullException(nameof(tokenEndpoint));
+            _clientId = clientId ?? throw new ArgumentNullException(nameof(clientId));
+            _clientSecret = clientSecret ?? throw new ArgumentNullException(nameof(clientSecret));
+            _scope = scope ?? string.Empty;
+            _enableLogging = enableLogging;
+            _bufferMinutes = bufferMinutes;
+        }
+
+        /// <summary>
+        /// Obtém access token (com cache e refresh automático)
+        /// </summary>
+        public string GetAccessToken()
+        {
+            lock (_lock)
+            {
+                // Check if cached token is still valid (with buffer)
+                if (!string.IsNullOrWhiteSpace(_cachedToken) &&
+                    DateTime.UtcNow < _tokenExpiration.AddMinutes(-_bufferMinutes))
+                {
+                    if (_enableLogging)
+                    {
+                        LogInfo($"Using cached token (expires in {(_tokenExpiration - DateTime.UtcNow).TotalMinutes:F1} minutes)");
+                    }
+                    return _cachedToken;
+                }
+
+                // Token expired or missing - acquire new one
+                if (_enableLogging)
+                {
+                    LogInfo("Token expired or missing. Acquiring new token...");
+                }
+
+                AcquireNewToken();
+
+                if (string.IsNullOrWhiteSpace(_cachedToken))
+                {
+                    throw new InvalidOperationException("Failed to acquire OAuth2 token. Check credentials.");
+                }
+
+                return _cachedToken;
+            }
+        }
+
+        /// <summary>
+        /// Força refresh do token
+        /// </summary>
+        public void RefreshToken()
+        {
+            lock (_lock)
+            {
+                _cachedToken = null;
+                _tokenExpiration = DateTime.MinValue;
+                AcquireNewToken();
+            }
+        }
+
+        /// <summary>
+        /// Invalida token em cache
+        /// </summary>
+        public void InvalidateToken()
+        {
+            lock (_lock)
+            {
+                _cachedToken = null;
+                _tokenExpiration = DateTime.MinValue;
+            }
+        }
+
+        /// <summary>
+        /// Verifica se tem token válido em cache
+        /// </summary>
+        public bool HasValidToken()
+        {
+            lock (_lock)
+            {
+                return !string.IsNullOrWhiteSpace(_cachedToken) &&
+                       DateTime.UtcNow < _tokenExpiration.AddMinutes(-_bufferMinutes);
+            }
+        }
+
+        /// <summary>
+        /// Retorna tempo até expiração do token
+        /// </summary>
+        public TimeSpan? GetTimeToExpiration()
+        {
+            lock (_lock)
+            {
+                if (string.IsNullOrWhiteSpace(_cachedToken))
+                    return null;
+
+                TimeSpan remaining = _tokenExpiration - DateTime.UtcNow;
+                return remaining.TotalSeconds > 0 ? remaining : TimeSpan.Zero;
+            }
+        }
+
+        /// <summary>
+        /// Adquire novo token do endpoint OAuth2
+        /// </summary>
+        private void AcquireNewToken()
+        {
+            try
+            {
+                using (var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) })
+                {
+                    // Build form-encoded body
+                    var formData = new Dictionary<string, string>
+                    {
+                        { "grant_type", "client_credentials" },
+                        { "client_id", _clientId },
+                        { "client_secret", _clientSecret }
+                    };
+
+                    if (!string.IsNullOrWhiteSpace(_scope))
+                    {
+                        formData.Add("scope", _scope);
+                    }
+
+                    var content = new FormUrlEncodedContent(formData);
+
+                    if (_enableLogging)
+                    {
+                        LogInfo($"POST {_tokenEndpoint}");
+                        LogInfo($"grant_type=client_credentials, client_id={_clientId}, scope={_scope}");
+                    }
+
+                    // Make token request
+                    HttpResponseMessage response = client.PostAsync(_tokenEndpoint, content)
+                        .GetAwaiter().GetResult();
+
+                    string responseBody = response.Content.ReadAsStringAsync()
+                        .GetAwaiter().GetResult();
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        throw new InvalidOperationException(
+                            $"OAuth2 token request failed with status {(int)response.StatusCode}: {responseBody}");
+                    }
+
+                    // Parse response
+                    using (JsonDocument doc = JsonDocument.Parse(responseBody))
+                    {
+                        JsonElement root = doc.RootElement;
+
+                        if (!root.TryGetProperty("access_token", out JsonElement accessTokenProp))
+                        {
+                            throw new InvalidOperationException("Response JSON does not contain 'access_token'");
+                        }
+
+                        _cachedToken = accessTokenProp.GetString();
+
+                        // Get expiration (default to 3600 seconds if not provided)
+                        int expiresIn = 3600;
+                        if (root.TryGetProperty("expires_in", out JsonElement expiresInProp))
+                        {
+                            expiresIn = expiresInProp.GetInt32();
+                        }
+
+                        _tokenExpiration = DateTime.UtcNow.AddSeconds(expiresIn);
+
+                        if (_enableLogging)
+                        {
+                            LogInfo($"✓ Token acquired successfully. Expires in {expiresIn}s ({_tokenExpiration:yyyy-MM-dd HH:mm:ss} UTC)");
+                            LogInfo($"Token (first 20 chars): {_cachedToken?.Substring(0, Math.Min(20, _cachedToken.Length ?? 0))}...");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                if (_enableLogging)
+                {
+                    LogError($"Failed to acquire token: {ex.Message}");
+                }
+                throw new InvalidOperationException($"Failed to acquire OAuth2 token: {ex.Message}", ex);
+            }
+        }
+
+        private void LogInfo(string message)
+        {
+            Console.WriteLine($"[OAuth2TokenManager] {message}");
+        }
+
+        private void LogError(string message)
+        {
+            Console.Error.WriteLine($"[OAuth2TokenManager] ERROR: {message}");
+        }
+    }
+}

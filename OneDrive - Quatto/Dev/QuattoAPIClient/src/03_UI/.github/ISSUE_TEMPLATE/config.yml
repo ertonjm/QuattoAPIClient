@@ -1,0 +1,17 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 Documentation
+    url: https://github.com/ertonjm/QuattoAPIClient/blob/main/README.md
+    about: View full documentation and guides
+  
+  - name: 💬 Discussions
+    url: https://github.com/ertonjm/QuattoAPIClient/discussions
+    about: Ask questions and share ideas with the community
+  
+  - name: 🔒 Security Issues
+    url: https://github.com/ertonjm/QuattoAPIClient/security/advisories/new
+    about: Report security vulnerabilities responsibly
+  
+  - name: 📧 Email Support
+    url: mailto:erton.miranda@quatto.com.br
+    about: Contact us directly for commercial support

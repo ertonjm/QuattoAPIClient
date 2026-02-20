@@ -1,0 +1,126 @@
+﻿# Execution Tasks — Remoção de Newtonsoft.Json
+
+**Status**: Not Started  
+**Scenario**: remove-newtonsoftjson  
+**Plan Reference**: `.github/upgrades/plan.md`
+
+---
+
+## Task Overview
+**Progress**: 2/3 tasks complete (67%) ![67%](https://progress-bar.xyz/67)
+| Task | Title | Status | Priority |
+|------|-------|--------|----------|
+| TASK-001 | Pr�-requisitos e Prepara��o | [✓] Complete | High |
+| TASK-002 | Remo��o At�mica do Newtonsoft.Json | [✓] Complete | High |
+| TASK-003 | Validação de Build e Runtime | [ ] Not Started | High |
+
+---
+
+## [✓] TASK-001: Pr�-requisitos e Prepara��o *(Completed: 2026-02-05 11:15)*
+
+**Description**: Verificar ambiente, clonar repositório, criar branch de feature e executar varredura final por usos de Newtonsoft.Json.
+
+**Actions**:
+- [✓] (1) Verificar vers�o do .NET SDK instalada e ferramentas MSBuild dispon�veis.
+      Command: `dotnet --version`
+- [✓] (2) Confirmar estado atual do reposit�rio e branch ativo.
+      Command: `git status` e `git branch -v`
+- [✓] (3) Criar branch de feature para isolamento da mudan�a.
+      Command: `git checkout -b upgrade/remove-newtonsoftjson`
+- [✓] (4) Executar busca final por tokens Newtonsoft.Json em todo o reposit�rio.
+      Command: `Get-ChildItem -Path . -Recurse -File | Where-Object { $_.Extension -in '.cs','.config','.csproj' } | Select-String -Pattern "Newtonsoft.Json|JsonConvert|JObject|JToken" -SimpleMatch`
+- [✓] (5) Verificar depend�ncias transitivas que possam depender de Newtonsoft.Json.
+      Command: `dotnet list src/02_ConnectionManager/QuattoAPIClient.ConnectionManager.csproj package --include-transitive | Select-String -Pattern "Newtonsoft" -SimpleMatch`
+
+**Success Criteria**:
+- SDK versão 4.7.2 ou superior disponível
+- Branch `upgrade/remove-newtonsoftjson` criada e ativa
+- Busca retorna ZERO ocorrências de tokens Newtonsoft.Json (ou justificadas)
+- Sem dependências transitivas com Newtonsoft.Json detectadas
+
+**Estimated Duration**: ~5 minutos
+
+---
+
+## [✓] TASK-002: Remo��o At�mica do Newtonsoft.Json *(Completed: 2026-02-05 11:16)*
+
+**Description**: Remover a referência de pacote Newtonsoft.Json do projeto ConnectionManager, restaurar pacotes e compilar a solução. Corrigir erros de compilação caso surjam.
+
+**Actions**:
+- [✓] (1) Abrir arquivo `src/02_ConnectionManager/QuattoAPIClient.ConnectionManager.csproj` no editor.
+- [✓] (2) Localizar e remover a linha: `<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />`
+      Expected: linha presente antes da edição, ausente depois.
+- [✓] (3) Salvar o arquivo .csproj ap�s remo��o.
+- [✓] (4) Executar restore de pacotes NuGet.
+      Command: `dotnet restore`
+      Expected: "Restore succeeded" sem erros.
+- [✓] (5) Recompilar a solu��o completa.
+      Command: `msbuild /t:Rebuild` (ou Rebuild Solution no Visual Studio)
+      Expected: "Build succeeded" com 0 erros, pode haver warnings não relacionados.
+- [✓] (6) Se houver erros de compila��o referenciando Newtonsoft.Json, corrigir conforme necess�rio.
+      Note: Baseado na análise, nenhum erro é esperado. Se ocorrer, investigar e documentar.
+
+**Success Criteria**:
+- PackageReference removida do arquivo .csproj
+- `dotnet restore` completa sem erros
+- Build completa com 0 erros de compilação
+- Nenhuma referência a Newtonsoft.Json em erros de build
+
+**Estimated Duration**: ~10 minutos
+
+---
+
+## TASK-003: Validação de Build e Runtime
+
+**Description**: Executar testes automatizados (se existirem), validar fluxos críticos manuais e confirmar carregamento do componente em ambiente SSIS.
+
+**Actions**:
+- [ ] (1) Listar e executar testes automatizados (se houver projeto de testes).
+      Command: `dotnet test` (se existir projeto .Test ou similar)
+      Expected: Todos os testes passam ou justificativa de skip.
+- [ ] (2) Validar fluxo OAuth2: aquisição de token em `OAuth2TokenManager`.
+      Manual: Executar teste manual ou trace de código verificando `System.Text.Json` na serialização de resposta.
+- [ ] (3) Validar fluxo HTTP: chamadas GET/POST em `HttpHelper` sem referências a Newtonsoft.Json.
+      Manual: Inspecionar logs/output após build; confirmar que HttpClient e retries funcionam.
+- [ ] (4) Validar carregamento do componente SSIS em ambiente de teste (ou validação local).
+      Manual: Carregar DLL em SSIS DTSPipelineWrap; confirmar ausência de FileNotFoundException ou TypeLoadException relacionada a Newtonsoft.Json.
+- [ ] (5) Verificar package.lock.json (se presente) para confirmar que Newtonsoft.Json não está mais listado.
+      Command: `Get-ChildItem -Recurse -Filter packages.lock.json | Select-String "Newtonsoft.Json"`
+      Expected: Sem matches.
+
+**Success Criteria**:
+- Testes automatizados passam (ou projeto não tem testes)
+- Fluxos manuais críticos executam sem exceções
+- Carregamento do componente em SSIS sem erros
+- Nenhuma referência a Newtonsoft.Json em lock file ou dependências
+
+**Estimated Duration**: ~15 minutos (testes manuais)
+
+---
+
+## Post-Execution (quando todos os tasks passam)
+
+- [ ] Commit atômico com mensagem: `Remove Newtonsoft.Json package (refactor to System.Text.Json)`
+      Command: `git add -A && git commit -m "Remove Newtonsoft.Json package (refactor to System.Text.Json)"`
+- [ ] Push branch para origem:
+      Command: `git push --set-upstream origin upgrade/remove-newtonsoftjson`
+- [ ] Abrir Pull Request no repositório com checklist preenchido e evidências de build/testes.
+
+---
+
+## Execution Log
+
+(será preenchido durante execução)
+
+**Start Time**: [preenchido no início]  
+**Current Task**: TASK-001  
+**Status**: Awaiting user confirmation to proceed
+
+---
+
+## Notes & Observations
+
+- Conforme plano.md (§ 4), esta é uma operação atômica All-At-Once. Não há rollback parcial — ou todas as tarefas passam ou revertemos o commit inteiro.
+- Assessment.md indica risco baixo baseado em varredura de código, mas validação em runtime (SSIS) é crítica.
+- Branch será deletada após merge da PR conforme política padrão de cleanup.
+

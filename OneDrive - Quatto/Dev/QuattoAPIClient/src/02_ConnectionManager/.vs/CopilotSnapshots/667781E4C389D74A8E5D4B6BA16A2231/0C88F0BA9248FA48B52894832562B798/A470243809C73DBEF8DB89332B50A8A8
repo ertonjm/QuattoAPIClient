@@ -1,0 +1,83 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net472</TargetFramework>
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<AssemblyName>QuattoAPIClient.Connection</AssemblyName>
+		<RootNamespace>QuattoAPIClient.Connection</RootNamespace>
+
+		<Company>Quatto Consultoria</Company>
+		<Product>Quatto API Client for SSIS</Product>
+		<Description>Custom Connection Manager (OAuth2/Bearer/ApiKey) para consumo de APIs REST no SSIS.</Description>
+		<Authors>Erton Miranda; Quatto Team</Authors>
+
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<FileVersion>1.0.0.0</FileVersion>
+		<LangVersion>latest</LangVersion>
+		<Nullable>enable</Nullable>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+		<!-- 140=SQL2017, 150=SQL2019, 160=SQL2022 -->
+		<!-- Allow overriding via MSBuild property: dotnet build -p:SqlServerVersion=140 -->
+		<SqlServerVersion Condition="'$(SqlServerVersion)'==''">150</SqlServerVersion>
+
+		<!-- (Opcional) Assinatura forte
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\keys\QuattoAPIClient.snk</AssemblyOriginatorKeyFile>
+    -->
+	</PropertyGroup>
+
+	<!-- Referências SSIS por versão -->
+	<ItemGroup Condition="Exists('C:\\Program Files\\Microsoft SQL Server\\140\\DTS\\Binn\\Microsoft.SqlServer.ManagedDTS.dll') and '$(SqlServerVersion)'=='140'">
+		<Reference Include="Microsoft.SqlServer.ManagedDTS">
+			<HintPath>C:\Program Files\Microsoft SQL Server\140\DTS\Binn\Microsoft.SqlServer.ManagedDTS.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup Condition="Exists('C:\\Program Files\\Microsoft SQL Server\\150\\DTS\\Binn\\Microsoft.SqlServer.ManagedDTS.dll') and '$(SqlServerVersion)'=='150'">
+		<Reference Include="Microsoft.SqlServer.ManagedDTS">
+			<HintPath>C:\Program Files\Microsoft SQL Server\150\DTS\Binn\Microsoft.SqlServer.ManagedDTS.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup Condition="Exists('C:\\Program Files\\Microsoft SQL Server\\160\\DTS\\Binn\\Microsoft.SqlServer.ManagedDTS.dll') and '$(SqlServerVersion)'=='160'">
+		<Reference Include="Microsoft.SqlServer.ManagedDTS">
+			<HintPath>C:\Program Files\Microsoft SQL Server\160\DTS\Binn\Microsoft.SqlServer.ManagedDTS.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include=".github\workflows\ci.yml" />
+	</ItemGroup>
+
+	<!-- Dependências usuais -->
+	<ItemGroup>
+		<PackageReference Include="System.Net.Http" Version="4.3.4" />
+		<PackageReference Include="System.Text.Json" Version="6.0.7" />
+	</ItemGroup>
+
+	<!-- Framework base -->
+	<ItemGroup>
+		<Reference Include="System" />
+		<Reference Include="System.Core" />
+		<Reference Include="System.Data" />
+		<Reference Include="System.Configuration" />
+		<Reference Include="System.Xml" />
+		<Reference Include="System.Windows.Forms" />
+	</ItemGroup>
+
+	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
+		<DefineConstants>DEBUG;TRACE</DefineConstants>
+		<DebugType>portable</DebugType>
+		<DebugSymbols>true</DebugSymbols>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)'=='Release'">
+		<DefineConstants>TRACE</DefineConstants>
+		<Optimize>true</Optimize>
+	</PropertyGroup>
+
+</Project>

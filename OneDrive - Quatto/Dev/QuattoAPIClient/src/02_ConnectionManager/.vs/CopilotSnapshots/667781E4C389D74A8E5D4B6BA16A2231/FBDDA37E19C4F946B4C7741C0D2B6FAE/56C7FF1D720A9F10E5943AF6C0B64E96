@@ -1,0 +1,125 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Text.Json;
+using Microsoft.SqlServer.Dts.Runtime;
+
+namespace QuattoAPIClient.Connection
+{
+    [DtsConnection(
+        ConnectionType = "API",
+        DisplayName = "Quatto API Connection",
+        Description = "Gerencia autenticação e headers padrão para APIs REST (OAuth2/Bearer/ApiKey).")]
+    public class ApiConnectionManager : ConnectionManagerBase
+    {
+        // ===== Propriedades configuráveis no SSDT =====
+        // Tipo de autenticação
+        public string AuthType { get; set; } = "Bearer"; // ApiKey|Bearer|OAuth2ClientCredentials
+
+        // Common
+        public int TimeoutSeconds { get; set; } = 100;
+        public string DefaultHeadersJson { get; set; } = "{\"Accept\":\"application/json\",\"User-Agent\":\"Quatto-SSIS-API/1.0\"}";
+
+        // ApiKey
+        public string ApiKeyHeader { get; set; } = "x-api-key";
+        public string ApiKeyValue { get; set; } = ""; // Sensitive
+
+        // Bearer fixo
+        public string BearerToken { get; set; } = ""; // Sensitive
+
+        // OAuth2 Client Credentials
+        public string TokenEndpoint { get; set; } = ""; // https://.../oauth2/token
+        public string ClientId { get; set; } = "";      // Sensitive
+        public string ClientSecret { get; set; } = "";  // Sensitive
+        public string Scope { get; set; } = "";         // opcional
+
+        // Sandbox (se for usar baseUrl alternativo no Source; aqui é apenas referência)
+        public bool SandboxMode { get; set; } = false;
+
+        // ===== Estado interno (não serializado) =====
+        [NonSerialized] private HttpClient? _httpClient;
+        [NonSerialized] private OAuth2TokenManager? _tokenManager;
+
+        public override object AcquireConnection(object txn)
+        {
+            // Retornar a si mesmo para uso em Components/Source/UI, quando necessário
+            return this;
+        }
+
+        public HttpClient BuildHttpClient()
+        {
+            if (_httpClient != null)
+                return _httpClient;
+
+            var http = new HttpClient { Timeout = TimeSpan.FromSeconds(Math.Max(1, TimeoutSeconds)) };
+
+            // Headers padrão (sem quebrar design-time se JSON inválido)
+            TryApplyDefaultHeaders(http, DefaultHeadersJson);
+
+            switch ((AuthType ?? "Bearer").Trim())
+            {
+                case "ApiKey":
+                    if (string.IsNullOrWhiteSpace(ApiKeyHeader) || string.IsNullOrWhiteSpace(ApiKeyValue))
+                        throw new ApplicationException("ApiKeyHeader/ApiKeyValue não configurados.");
+                    http.DefaultRequestHeaders.TryAddWithoutValidation(ApiKeyHeader, ApiKeyValue);
+                    break;
+
+                case "Bearer":
+                    if (string.IsNullOrWhiteSpace(BearerToken))
+                        throw new ApplicationException("BearerToken não configurado.");
+                    http.DefaultRequestHeaders.Authorization =
+                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", BearerToken);
+                    break;
+
+                case "OAuth2ClientCredentials":
+                    if (string.IsNullOrWhiteSpace(TokenEndpoint) ||
+                        string.IsNullOrWhiteSpace(ClientId) ||
+                        string.IsNullOrWhiteSpace(ClientSecret))
+                        throw new ApplicationException("OAuth2 requer TokenEndpoint, ClientId e ClientSecret.");
+
+                    _tokenManager ??= new OAuth2TokenManager(TokenEndpoint, ClientId, ClientSecret, Scope);
+                    var token = _tokenManager.GetAccessToken();
+                    http.DefaultRequestHeaders.Authorization =
+                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                    break;
+
+                default:
+                    throw new NotSupportedException($"AuthType '{AuthType}' não suportado.");
+            }
+
+            _httpClient = http;
+            return _httpClient;
+        }
+
+        public override void ReleaseConnection(object connection)
+        {
+            _httpClient?.Dispose();
+            _httpClient = null;
+            _tokenManager = null;
+        }
+
+        private static void TryApplyDefaultHeaders(HttpClient http, string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return;
+            try
+            {
+                var doc = JsonDocument.Parse(json);
+                foreach (var prop in doc.RootElement.EnumerateObject())
+                {
+                    var value = prop.Value.ValueKind == JsonValueKind.String
+                        ? prop.Value.GetString()
+                        : prop.Value.ToString();
+                    if (!string.IsNullOrWhiteSpace(prop.Name) && value != null)
+                    {
+                        http.DefaultRequestHeaders.Remove(prop.Name); // evita duplicidade
+                        http.DefaultRequestHeaders.TryAddWithoutValidation(prop.Name, value);
+                    }
+                }
+            }
+            catch
+            {
+                // Não interromper design-time por header inválido; apenas ignore
+            }
+        }
+    }
+}

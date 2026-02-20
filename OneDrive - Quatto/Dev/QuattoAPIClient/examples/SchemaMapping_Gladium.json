@@ -1,0 +1,114 @@
+{
+  "columns": [
+    {
+      "name": "order_id",
+      "path": "$.id",
+      "type": "DT_WSTR",
+      "length": 50,
+      "defaultValue": ""
+    },
+    {
+      "name": "order_number",
+      "path": "$.orderNumber",
+      "type": "DT_WSTR",
+      "length": 100,
+      "defaultValue": ""
+    },
+    {
+      "name": "customer_id",
+      "path": "$.customer.id",
+      "type": "DT_WSTR",
+      "length": 50,
+      "defaultValue": ""
+    },
+    {
+      "name": "customer_name",
+      "path": "$.customer.name",
+      "type": "DT_WSTR",
+      "length": 200,
+      "defaultValue": ""
+    },
+    {
+      "name": "customer_email",
+      "path": "$.customer.email",
+      "type": "DT_WSTR",
+      "length": 100,
+      "defaultValue": ""
+    },
+    {
+      "name": "order_date",
+      "path": "$.orderDate",
+      "type": "DT_DBTIMESTAMP2",
+      "defaultValue": null
+    },
+    {
+      "name": "updated_at",
+      "path": "$.updatedAt",
+      "type": "DT_DBTIMESTAMP2",
+      "defaultValue": null
+    },
+    {
+      "name": "status",
+      "path": "$.status",
+      "type": "DT_WSTR",
+      "length": 50,
+      "defaultValue": "PENDING"
+    },
+    {
+      "name": "total_amount",
+      "path": "$.amount.total",
+      "type": "DT_NUMERIC",
+      "precision": 18,
+      "scale": 2,
+      "defaultValue": "0.00"
+    },
+    {
+      "name": "currency",
+      "path": "$.amount.currency",
+      "type": "DT_WSTR",
+      "length": 3,
+      "defaultValue": "BRL"
+    },
+    {
+      "name": "payment_method",
+      "path": "$.payment.method",
+      "type": "DT_WSTR",
+      "length": 50,
+      "defaultValue": ""
+    },
+    {
+      "name": "is_paid",
+      "path": "$.payment.isPaid",
+      "type": "DT_BOOL",
+      "defaultValue": "false"
+    },
+    {
+      "name": "shipping_address",
+      "path": "$.shipping.address",
+      "type": "DT_WSTR",
+      "length": 500,
+      "defaultValue": ""
+    },
+    {
+      "name": "shipping_city",
+      "path": "$.shipping.city",
+      "type": "DT_WSTR",
+      "length": 100,
+      "defaultValue": ""
+    },
+    {
+      "name": "shipping_state",
+      "path": "$.shipping.state",
+      "type": "DT_WSTR",
+      "length": 2,
+      "defaultValue": ""
+    },
+    {
+      "name": "shipping_zip",
+      "path": "$.shipping.zipCode",
+      "type": "DT_WSTR",
+      "length": 10,
+      "defaultValue": ""
+    }
+  ]
+}

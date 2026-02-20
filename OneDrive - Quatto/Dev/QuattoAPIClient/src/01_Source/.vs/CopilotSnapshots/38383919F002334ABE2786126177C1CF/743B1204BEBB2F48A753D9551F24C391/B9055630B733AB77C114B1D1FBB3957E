@@ -1,0 +1,54 @@
+﻿# QuattoAPIClient.UI
+
+Interface gráfica para configuração do componente Quatto API Client no SSIS.
+
+---
+
+## ✨ Funcionalidade
+
+- Implementa o **CorporateApiSourceUI** para facilitar configuração no SSDT.
+- Inclui wizard de configuração, validação de propriedades e integração com Connection Manager.
+
+---
+
+## 🗂 Estrutura
+```
+src/03_UI/
+├── QuattoAPIClient.UI.csproj
+├── CorporateApiSourceUI.cs
+├── Forms/
+│   ├── ApiSourceWizard.cs
+│   └── ApiSourceWizard.Designer.cs
+└── Properties/
+└── AssemblyInfo.cs
+---
+
+## 🛠 Dependências
+
+- .NET Framework 4.7.2
+- System.Windows.Forms
+- Referências SSIS: DTSPipelineWrap, PipelineHost, DTSRuntimeWrap, ManagedDTS
+
+---
+
+## 📋 Uso
+
+1. Compile o projeto via Visual Studio.
+2. Importe a DLL gerada no SSIS Toolbox.
+3. Utilize o wizard para configurar endpoints, paginação, watermark e mapeamento de esquema.
+
+---
+
+## 📚 Documentação
+
+Consulte `../../docs/01_INSTALLATION.md` e `../../docs/03_USAGE.md` para instruções detalhadas.
+
+---
+
+## 🆘 Suporte
+
+Problemas comuns:
+- Wizard não abre: verifique dependências do Windows Forms
+- Propriedades não persistem: confira permissões e deploy
+
+Contato: Erton Miranda <erton.miranda@quatto.com.br>

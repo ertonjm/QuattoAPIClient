@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net472</TargetFramework>
+		<AssemblyName>QuattoAPIClient.ConnectionManager</AssemblyName>
+		<RootNamespace>QuattoAPIClient.ConnectionManager</RootNamespace>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<FileVersion>1.0.0.0</FileVersion>
+		<Company>Quatto Consultoria</Company>
+		<Product>Quatto API Client for SSIS</Product>
+		<Description>Connection Manager for API authentication</Description>
+		<Copyright>Copyright © 2026 Quatto Consultoria</Copyright>
+		<LangVersion>latest</LangVersion>
+		<Nullable>enable</Nullable>
+		<!-- Prevent generation of duplicate assembly attributes when AssemblyInfo.cs is present -->
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- SSIS References -->
+		<Reference Include="Microsoft.SqlServer.ManagedDTS">
+			<HintPath>C:\Program Files\Microsoft SQL Server\150\DTS\Binn\Microsoft.SqlServer.ManagedDTS.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="Microsoft.SqlServer.DTSRuntimeWrap">
+			<HintPath>C:\Program Files\Microsoft SQL Server\150\SDK\Assemblies\Microsoft.SqlServer.DTSRuntimeWrap.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="System.Net.Http" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="System.Text.Json" Version="8.0.5" />
+	</ItemGroup>
+</Project>

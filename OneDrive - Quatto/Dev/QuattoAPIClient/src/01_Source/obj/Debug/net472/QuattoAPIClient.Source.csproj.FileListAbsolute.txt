@@ -1,0 +1,5 @@
+C:\Users\ErtonLuisdeJesusMira\OneDrive - Quatto\Dev\QuattoAPIClient\src\01_Source\obj\Debug\net472\QuattoAPIClient.Source.csproj.AssemblyReference.cache
+C:\Users\ErtonLuisdeJesusMira\OneDrive - Quatto\Dev\QuattoAPIClient\src\01_Source\obj\Debug\net472\QuattoAPIClient.Source.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\ErtonLuisdeJesusMira\OneDrive - Quatto\Dev\QuattoAPIClient\src\01_Source\obj\Debug\net472\QuattoAPIClient.Source.AssemblyInfoInputs.cache
+C:\Users\ErtonLuisdeJesusMira\OneDrive - Quatto\Dev\QuattoAPIClient\src\01_Source\obj\Debug\net472\QuattoAPIClient.Source.AssemblyInfo.cs
+C:\Users\ErtonLuisdeJesusMira\OneDrive - Quatto\Dev\QuattoAPIClient\src\01_Source\obj\Debug\net472\QuattoAPIClient.Source.csproj.CoreCompileInputs.cache

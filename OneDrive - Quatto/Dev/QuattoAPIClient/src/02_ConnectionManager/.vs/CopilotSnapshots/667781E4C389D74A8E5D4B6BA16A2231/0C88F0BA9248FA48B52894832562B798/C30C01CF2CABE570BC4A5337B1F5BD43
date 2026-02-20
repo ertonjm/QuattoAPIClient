@@ -1,0 +1,128 @@
+﻿using System;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
+
+namespace QuattoAPIClient.Connection
+{
+    /// <summary>
+    /// Gerencia obtenção e cache de access token (OAuth2 client_credentials),
+    /// com refresh proativo quando próximo da expiração e controle de concorrência.
+    /// </summary>
+    public sealed class OAuth2TokenManager
+    {
+        private readonly string _tokenEndpoint;
+        private readonly string _clientId;
+        private readonly string _clientSecret;
+        private readonly string _scope;
+
+        // Limiar para refresh antecipado (segundos antes de expirar)
+        private readonly int _refreshSkewSeconds;
+
+        private string _accessToken = string.Empty;
+        private DateTimeOffset _expiresAtUtc = DateTimeOffset.MinValue;
+
+        // Controla refresh concorrente (apenas um thread renova por vez)
+        private readonly SemaphoreSlim _gate = new SemaphoreSlim(1, 1);
+
+        public OAuth2TokenManager(
+            string tokenEndpoint,
+            string clientId,
+            string clientSecret,
+            string scope = "",
+            int refreshSkewSeconds = 60 // renova 60s antes de expirar
+        )
+        {
+            _tokenEndpoint = tokenEndpoint ?? throw new ArgumentNullException(nameof(tokenEndpoint));
+            _clientId = clientId ?? throw new ArgumentNullException(nameof(clientId));
+            _clientSecret = clientSecret ?? throw new ArgumentNullException(nameof(clientSecret));
+            _scope = scope ?? string.Empty;
+            _refreshSkewSeconds = Math.Max(1, refreshSkewSeconds);
+        }
+
+        /// <summary>
+        /// Retorna um access token válido. Se estiver próximo de expirar, renova antes.
+        /// </summary>
+        public string GetAccessToken()
+        {
+            // Caminho rápido: token válido e não perto do limiar de expiração
+            if (IsTokenValid(nowUtc: DateTimeOffset.UtcNow, includeSkew: true))
+                return _accessToken;
+
+            _gate.Wait();
+            try
+            {
+                // Dupla checagem após adquirir o lock
+                if (IsTokenValid(nowUtc: DateTimeOffset.UtcNow, includeSkew: true))
+                    return _accessToken;
+
+                RefreshTokenInternal();
+                return _accessToken;
+            }
+            finally
+            {
+                _gate.Release();
+            }
+        }
+
+        /// <summary>
+        /// Força refresh (usado, por exemplo, após um 401).
+        /// </summary>
+        public void ForceRefresh()
+        {
+            _gate.Wait();
+            try
+            {
+                RefreshTokenInternal();
+            }
+            finally
+            {
+                _gate.Release();
+            }
+        }
+
+        private bool IsTokenValid(DateTimeOffset nowUtc, bool includeSkew)
+        {
+            if (string.IsNullOrEmpty(_accessToken)) return false;
+            var threshold = includeSkew
+                ? _expiresAtUtc.AddSeconds(-_refreshSkewSeconds)
+                : _expiresAtUtc;
+            return nowUtc < threshold;
+        }
+
+        private void RefreshTokenInternal()
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+
+            var body = new StringBuilder("grant_type=client_credentials");
+            if (!string.IsNullOrWhiteSpace(_scope))
+                body.Append("&scope=").Append(Uri.EscapeDataString(_scope));
+
+            // Basic Auth (client_id:client_secret)
+            var basic = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{_clientId}:{_clientSecret}"));
+
+            using var req = new HttpRequestMessage(HttpMethod.Post, _tokenEndpoint);
+            req.Headers.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", basic);
+            req.Content = new StringContent(body.ToString(), Encoding.UTF8, "application/x-www-form-urlencoded");
+            using var resp = http.SendAsync(req).GetAwaiter().GetResult();
+            resp.EnsureSuccessStatusCode();
+
+            var json = resp.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            using var doc = JsonDocument.Parse(json);
+
+            if (!doc.RootElement.TryGetProperty("access_token", out var tok))
+                throw new ApplicationException("Resposta OAuth2 sem 'access_token'.");
+
+            var token = tok.GetString() ?? throw new ApplicationException("Token vazio.");
+
+            int expiresIn = 300; // fallback
+            if (doc.RootElement.TryGetProperty("expires_in", out var exp) && exp.TryGetInt32(out var seconds))
+                expiresIn = seconds;
+
+            _accessToken = token;
+            _expiresAtUtc = DateTimeOffset.UtcNow.AddSeconds(Math.Max(1, expiresIn));
+        }
+    }
+}

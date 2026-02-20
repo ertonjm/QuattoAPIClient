@@ -1,0 +1,67 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net472</TargetFramework>
+		<AssemblyName>QuattoAPIClient.Source</AssemblyName>
+		<RootNamespace>QuattoAPIClient.Source</RootNamespace>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<FileVersion>1.0.0.0</FileVersion>
+		<Company>Quatto Consultoria</Company>
+		<Product>Quatto API Client for SSIS</Product>
+		<Description>Custom SSIS source component for REST API consumption</Description>
+		<Copyright>Copyright © 2026 Quatto Consultoria</Copyright>
+		<LangVersion>latest</LangVersion>
+		<Nullable>enable</Nullable>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<OutputPath>bin\$(Configuration)\</OutputPath>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+		<DebugType>full</DebugType>
+		<DebugSymbols>true</DebugSymbols>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
+		<DebugType>none</DebugType>
+		<Optimize>true</Optimize>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <None Include=".github\upgrades\assessment.md" />
+	  <None Include=".github\upgrades\code-review-checklist.md" />
+	  <None Include=".github\upgrades\execution_report.md" />
+	  <None Include=".github\upgrades\plan.md" />
+	  <None Include=".github\upgrades\tasks.md" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- SSIS Core References - Using GAC (Global Assembly Cache) references -->
+		<Reference Include="Microsoft.SqlServer.DTSPipelineWrap">
+			<SpecificVersion>False</SpecificVersion>
+		</Reference>
+		<Reference Include="Microsoft.SqlServer.PipelineHost">
+			<SpecificVersion>False</SpecificVersion>
+		</Reference>
+		<Reference Include="Microsoft.SqlServer.DTSRuntimeWrap">
+			<SpecificVersion>False</SpecificVersion>
+		</Reference>
+		<Reference Include="Microsoft.SqlServer.ManagedDTS">
+			<SpecificVersion>False</SpecificVersion>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- NuGet Packages -->
+		<PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
+		<PackageReference Include="System.Text.Json" Version="10.0.2" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- Project References -->
+		<ProjectReference Include="..\02_ConnectionManager\QuattoAPIClient.ConnectionManager.csproj" />
+	</ItemGroup>
+
+	<!-- Post-Build: Copy to output for easy testing -->
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' == 'Debug'">
+		<Message Text="Debug build completed. DLL available at: $(TargetPath)" Importance="high" />
+	</Target>
+</Project>

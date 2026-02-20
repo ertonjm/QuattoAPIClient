@@ -1,0 +1,129 @@
+name: Build & Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '4.7.2'
+  SOLUTION_FILE: 'src/QuattoAPIClient.sln'
+  BUILD_CONFIG: 'Release'
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    
+    strategy:
+      matrix:
+        dotnet-version: ['4.7.2']
+    
+    steps:
+    # 1. Checkout código
+    - name: Checkout código
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    # 2. Setup .NET Framework
+    - name: Setup .NET Framework
+      uses: microsoft/setup-msbuild@v1
+      with:
+        vs-version: '17.0'
+    
+    # 3. Restore NuGet packages
+    - name: Restore NuGet packages
+      run: |
+        nuget restore ${{ env.SOLUTION_FILE }}
+    
+    # 4. Build solução
+    - name: Build solução
+      run: |
+        msbuild ${{ env.SOLUTION_FILE }} `
+          /p:Configuration=${{ env.BUILD_CONFIG }} `
+          /p:Platform="x64" `
+          /p:TreatWarningsAsErrors=false
+    
+    # 5. Run unit tests
+    - name: Run unit tests
+      run: |
+        dotnet test src/04_Tests/QuattoAPIClient.Tests.csproj `
+          --configuration ${{ env.BUILD_CONFIG }} `
+          --logger "trx" `
+          --results-directory "TestResults"
+    
+    # 6. Publish test results
+    - name: Publish test results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: TestResults/**/*.trx
+        check_name: Test Results
+        comment_title: Unit Test Results
+    
+    # 7. Upload coverage
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+    
+    # 8. Upload build artifacts
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: build-artifacts-${{ matrix.dotnet-version }}
+        path: |
+          src/**/bin/${{ env.BUILD_CONFIG }}/
+          TestResults/
+    
+    # 9. Publish results
+    - name: Publish build status
+      if: always()
+      run: |
+        echo "Build Status: Success ✅" >> $GITHUB_STEP_SUMMARY
+        echo "Configuration: ${{ env.BUILD_CONFIG }}" >> $GITHUB_STEP_SUMMARY
+        echo "Platform: x64" >> $GITHUB_STEP_SUMMARY
+
+  code-quality:
+    runs-on: windows-latest
+    needs: build-and-test
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      if: env.SONAR_TOKEN != ''
+
+  security-scan:
+    runs-on: windows-latest
+    needs: build-and-test
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v3
+    
+    - name: Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'

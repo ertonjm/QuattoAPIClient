@@ -1,0 +1,109 @@
+{
+  "project_parameters": {
+    "description": "Parâmetros de projeto para Quatto API Client",
+    "parameters": [
+      {
+        "name": "GladiumApiBaseUrl",
+        "dataType": "String",
+        "value": "https://api.gladium.com",
+        "sensitive": false,
+        "description": "URL base da API Gladium",
+        "required": true
+      },
+      {
+        "name": "GladiumApiToken",
+        "dataType": "String",
+        "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "sensitive": true,
+        "description": "Token de autenticação Gladium (Bearer)",
+        "required": true
+      },
+      {
+        "name": "PortalSESCApiBaseUrl",
+        "dataType": "String",
+        "value": "https://api.portalsesc.com.br",
+        "sensitive": false,
+        "description": "URL base da API Portal SESC",
+        "required": true
+      },
+      {
+        "name": "PortalSESCApiKey",
+        "dataType": "String",
+        "value": "abc123xyz789...",
+        "sensitive": true,
+        "description": "API Key do Portal SESC",
+        "required": true
+      },
+      {
+        "name": "EasydentalApiBaseUrl",
+        "dataType": "String",
+        "value": "https://api.easydental.com.br",
+        "sensitive": false,
+        "description": "URL base da API Easydental",
+        "required": false
+      },
+      {
+        "name": "EasydentalClientId",
+        "dataType": "String",
+        "value": "client_id_here",
+        "sensitive": true,
+        "description": "OAuth2 Client ID - Easydental",
+        "required": false
+      },
+      {
+        "name": "EasydentalClientSecret",
+        "dataType": "String",
+        "value": "client_secret_here",
+        "sensitive": true,
+        "description": "OAuth2 Client Secret - Easydental",
+        "required": false
+      },
+      {
+        "name": "DW_ConnectionString",
+        "dataType": "String",
+        "value": "Data Source=SQL-PRD;Initial Catalog=SESCDF_DW;Integrated Security=True;",
+        "sensitive": false,
+        "description": "Connection string do Data Warehouse",
+        "required": true
+      },
+      {
+        "name": "Environment",
+        "dataType": "String",
+        "value": "PRD",
+        "sensitive": false,
+        "description": "Ambiente atual: DEV, HML, PRD",
+        "required": true
+      }
+    ]
+  },
+  "environment_variables": {
+    "DEV": {
+      "GladiumApiBaseUrl": "https://sandbox.gladium.com",
+      "PortalSESCApiBaseUrl": "https://api-dev.portalsesc.com.br",
+      "DW_ConnectionString": "Data Source=SQL-DEV;Initial Catalog=SESCDF_DW_DEV;Integrated Security=True;",
+      "Environment": "DEV"
+    },
+    "HML": {
+      "GladiumApiBaseUrl": "https://staging.gladium.com",
+      "PortalSESCApiBaseUrl": "https://api-hml.portalsesc.com.br",
+      "DW_ConnectionString": "Data Source=SQL-HML;Initial Catalog=SESCDF_DW_HML;Integrated Security=True;",
+      "Environment": "HML"
+    },
+    "PRD": {
+      "GladiumApiBaseUrl": "https://api.gladium.com",
+      "PortalSESCApiBaseUrl": "https://api.portalsesc.com.br",
+      "DW_ConnectionString": "Data Source=SQL-PRD;Initial Catalog=SESCDF_DW;Integrated Security=True;",
+      "Environment": "PRD"
+    }
+  },
+  "usage_instructions": {
+    "1": "No SQL Server Management Studio, conecte ao SSISDB",
+    "2": "Navegue até Integration Services Catalogs → SSISDB → SESCDF_DW (pasta do projeto)",
+    "3": "Clique com botão direito → Configure",
+    "4": "Aba 'Parameters' → Adicione os parâmetros listados acima",
+    "5": "Para parâmetros sensíveis, marque 'Sensitive' checkbox",
+    "6": "Crie Environments (DEV, HML, PRD) na pasta Environments",
+    "7": "Associe o projeto aos environments configurados",
+    "8": "Configure References para mapear parâmetros aos environments"
+  }
+}

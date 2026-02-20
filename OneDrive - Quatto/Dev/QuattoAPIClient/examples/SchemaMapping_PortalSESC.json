@@ -1,0 +1,101 @@
+{
+  "columns": [
+    {
+      "name": "user_id",
+      "path": "$.userId",
+      "type": "DT_I8",
+      "defaultValue": "0"
+    },
+    {
+      "name": "username",
+      "path": "$.username",
+      "type": "DT_WSTR",
+      "length": 100,
+      "defaultValue": ""
+    },
+    {
+      "name": "email",
+      "path": "$.email",
+      "type": "DT_WSTR",
+      "length": 100,
+      "defaultValue": ""
+    },
+    {
+      "name": "full_name",
+      "path": "$.profile.fullName",
+      "type": "DT_WSTR",
+      "length": 200,
+      "defaultValue": ""
+    },
+    {
+      "name": "cpf",
+      "path": "$.profile.cpf",
+      "type": "DT_WSTR",
+      "length": 14,
+      "defaultValue": ""
+    },
+    {
+      "name": "birth_date",
+      "path": "$.profile.birthDate",
+      "type": "DT_DATE",
+      "defaultValue": null
+    },
+    {
+      "name": "phone",
+      "path": "$.profile.phone",
+      "type": "DT_WSTR",
+      "length": 20,
+      "defaultValue": ""
+    },
+    {
+      "name": "membership_type",
+      "path": "$.membership.type",
+      "type": "DT_WSTR",
+      "length": 50,
+      "defaultValue": "BASIC"
+    },
+    {
+      "name": "membership_status",
+      "path": "$.membership.status",
+      "type": "DT_WSTR",
+      "length": 20,
+      "defaultValue": "ACTIVE"
+    },
+    {
+      "name": "membership_start_date",
+      "path": "$.membership.startDate",
+      "type": "DT_DBTIMESTAMP2",
+      "defaultValue": null
+    },
+    {
+      "name": "membership_end_date",
+      "path": "$.membership.endDate",
+      "type": "DT_DBTIMESTAMP2",
+      "defaultValue": null
+    },
+    {
+      "name": "is_active",
+      "path": "$.isActive",
+      "type": "DT_BOOL",
+      "defaultValue": "true"
+    },
+    {
+      "name": "created_at",
+      "path": "$.createdAt",
+      "type": "DT_DBTIMESTAMP2",
+      "defaultValue": null
+    },
+    {
+      "name": "updated_at",
+      "path": "$.updatedAt",
+      "type": "DT_DBTIMESTAMP2",
+      "defaultValue": null
+    },
+    {
+      "name": "last_login",
+      "path": "$.lastLogin",
+      "type": "DT_DBTIMESTAMP2",
+      "defaultValue": null
+    }
+  ]
+}

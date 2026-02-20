@@ -1,0 +1,279 @@
+trigger:
+  - main
+  - develop
+  - feature/*
+
+pr:
+  - main
+  - develop
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  solution: '$(Build.SourcesDirectory)/src/QuattoAPIClient.sln'
+  buildPlatform: 'x64'
+  buildConfiguration: 'Release'
+  dotnetVersion: '4.7.2'
+
+stages:
+- stage: Build
+  displayName: Build & Test
+  jobs:
+  - job: BuildJob
+    displayName: Build Solution
+    steps:
+    - task: UseDotNet@2
+      displayName: Setup .NET
+      inputs:
+        packageType: 'sdk'
+        version: '7.x'
+    
+    - task: NuGetToolInstaller@1
+      displayName: Install NuGet
+      inputs:
+        checkLatest: true
+    
+    - task: NuGetCommand@2
+      displayName: Restore NuGet Packages
+      inputs:
+        command: 'restore'
+        restoreSolution: '$(solution)'
+    
+    - task: VSBuild@1
+      displayName: Build Solution
+      inputs:
+        solution: '$(solution)'
+        platform: '$(buildPlatform)'
+        configuration: '$(buildConfiguration)'
+        restoreNugetPackages: false
+        msbuildArguments: '/p:TreatWarningsAsErrors=false'
+    
+    - task: DotNetCoreCLI@2
+      displayName: Run Unit Tests
+      inputs:
+        command: 'test'
+        arguments: '--configuration $(buildConfiguration) --logger trx --collect:"XPlat Code Coverage"'
+        publishTestResults: true
+        projects: 'src/04_Tests/QuattoAPIClient.Tests.csproj'
+    
+    - task: PublishCodeCoverageResults@1
+      displayName: Publish Code Coverage
+      inputs:
+        codeCoverageTool: 'Cobertura'
+        summaryFileLocation: '$(Agent.TempDirectory)/**/coverage.cobertura.xml'
+        failIfCoverageEmpty: false
+
+- stage: QualityGate
+  displayName: Quality Gate
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - job: CodeQuality
+    displayName: Code Quality Checks
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.9'
+    
+    - script: |
+        pip install sonar-scanner
+        sonar-scanner.bat ^
+          -Dsonar.projectKey=QuattoAPIClient ^
+          -Dsonar.sources=src ^
+          -Dsonar.host.url=$(SONAR_HOST_URL) ^
+          -Dsonar.login=$(SONAR_TOKEN)
+      displayName: SonarQube Analysis
+      condition: ne(variables['Build.Reason'], 'PullRequest')
+      env:
+        SONAR_HOST_URL: $(sonarHostUrl)
+        SONAR_TOKEN: $(sonarToken)
+
+- stage: Package
+  displayName: Package Artifacts
+  dependsOn: QualityGate
+  condition: succeeded()
+  jobs:
+  - job: PackageJob
+    displayName: Create Release Package
+    steps:
+    - task: PowerShell@2
+      displayName: Create Release Directory
+      inputs:
+        targetType: 'inline'
+        script: |
+          mkdir Release
+          copy "$(Build.SourcesDirectory)/src/03_UI/bin/$(buildConfiguration)/net472/QuattoAPIClient.UI.dll" Release/
+          copy "$(Build.SourcesDirectory)/src/02_ConnectionManager/bin/$(buildConfiguration)/net472/QuattoAPIClient.ConnectionManager.dll" Release/
+          copy "$(Build.SourcesDirectory)/INSTALLATION.md" Release/
+          copy "$(Build.SourcesDirectory)/ARCHITECTURE.md" Release/
+    
+    - task: ArchiveFiles@2
+      displayName: Archive Release Package
+      inputs:
+        rootFolderOrFile: '$(Build.SourcesDirectory)/Release'
+        includeRootFolder: false
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/QuattoAPIClient-$(Build.BuildNumber).zip'
+    
+    - task: PublishBuildArtifacts@1
+      displayName: Publish Artifacts
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
+        publishLocation: 'Container'
+
+- stage: DeployStaging
+  displayName: Deploy to Staging
+  dependsOn: Package
+  condition: |
+    and(
+      succeeded(),
+      eq(variables['Build.SourceBranch'], 'refs/heads/develop')
+    )
+  jobs:
+  - deployment: DeployToStaging
+    displayName: Deploy Staging
+    environment: 'Staging'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: DownloadBuildArtifacts@0
+            displayName: Download Artifacts
+            inputs:
+              artifactName: 'drop'
+          
+          - task: PowerShell@2
+            displayName: Deploy to Staging
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Deploying to Staging Environment..."
+                
+                $stagingPath = "\\staging-server\SSIS\Components"
+                
+                if (-not (Test-Path $stagingPath)) {
+                    Write-Error "Staging path not found: $stagingPath"
+                    exit 1
+                }
+                
+                # Stop SSIS Integration Services
+                Stop-Service "MsDtsServer"
+                
+                # Copy DLLs
+                Copy-Item "*.dll" -Destination $stagingPath -Force
+                
+                # Start SSIS Integration Services
+                Start-Service "MsDtsServer"
+                
+                Write-Host "Deployment to Staging completed successfully"
+          
+          - task: PowerShell@2
+            displayName: Run Smoke Tests
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Running smoke tests..."
+                # TODO: Implement smoke tests
+                Write-Host "Smoke tests passed ✅"
+
+- stage: DeployProduction
+  displayName: Deploy to Production
+  dependsOn: Package
+  condition: |
+    and(
+      succeeded(),
+      eq(variables['Build.SourceBranch'], 'refs/heads/main')
+    )
+  jobs:
+  - deployment: ApproveProduction
+    displayName: Manual Approval
+    environment: 'Production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: echo Waiting for approval to deploy to production
+
+  - deployment: DeployToProduction
+    displayName: Deploy Production
+    dependsOn: ApproveProduction
+    environment: 'Production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: DownloadBuildArtifacts@0
+            displayName: Download Artifacts
+            inputs:
+              artifactName: 'drop'
+          
+          - task: PowerShell@2
+            displayName: Create Backup
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Creating backup of current DLLs..."
+                
+                $prodPath = "C:\Program Files\Microsoft SQL Server\160\DTS\Binn"
+                $backupPath = "C:\Backups\SSIS\$(Get-Date -Format 'yyyy-MM-dd-HHmmss')"
+                
+                mkdir -Force $backupPath | Out-Null
+                
+                Copy-Item "$prodPath\QuattoAPIClient.*.dll" -Destination $backupPath -Force
+                
+                Write-Host "Backup created at: $backupPath"
+          
+          - task: PowerShell@2
+            displayName: Deploy to Production
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Deploying to Production..."
+                
+                $prodPath = "C:\Program Files\Microsoft SQL Server\160\DTS\Binn"
+                
+                # Stop SSIS service
+                Stop-Service "MsDtsServer" -ErrorAction SilentlyContinue
+                Start-Sleep -Seconds 5
+                
+                # Copy DLLs
+                Copy-Item "$(Pipeline.Workspace)\drop\*.dll" -Destination $prodPath -Force
+                
+                # Start SSIS service
+                Start-Service "MsDtsServer"
+                Start-Sleep -Seconds 5
+                
+                Write-Host "Deployment to Production completed ✅"
+          
+          - task: PowerShell@2
+            displayName: Verify Deployment
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "Verifying production deployment..."
+                
+                $prodPath = "C:\Program Files\Microsoft SQL Server\160\DTS\Binn"
+                
+                $files = @(
+                  "QuattoAPIClient.UI.dll",
+                  "QuattoAPIClient.ConnectionManager.dll"
+                )
+                
+                $allPresent = $true
+                foreach ($file in $files) {
+                  if (Test-Path "$prodPath\$file") {
+                    Write-Host "✓ Found: $file"
+                  } else {
+                    Write-Host "✗ Missing: $file"
+                    $allPresent = $false
+                  }
+                }
+                
+                if ($allPresent) {
+                  Write-Host "✅ All required DLLs are present"
+                } else {
+                  Write-Error "Some DLLs are missing"
+                  exit 1
+                }

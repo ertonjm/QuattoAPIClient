@@ -1,0 +1,45 @@
+# Quatto API Client - CODEOWNERS
+
+# Este arquivo define quem é responsável por revisar mudanças em áreas específicas do projeto
+# Quando um PR é aberto, os owners serão automaticamente solicitados para revisão
+
+# Padrão: caminho @usuario
+
+# 🔴 CRÍTICO - Sempre requer revisão
+* @ertonjm
+
+# 📝 Documentação
+/README.md @ertonjm
+/CONTRIBUTING.md @ertonjm
+/docs/ @ertonjm
+/samples/ @ertonjm
+*.md @ertonjm
+
+# 🔧 Configuração
+/.github/ @ertonjm
+/.gitignore @ertonjm
+/LICENSE.md @ertonjm
+
+# 💻 Código Principal
+/01_Source/ @ertonjm
+/01_Source/Helpers/ @ertonjm
+/01_Source/Models/ @ertonjm
+
+# 🔌 Connection Manager
+/02_ConnectionManager/ @ertonjm
+
+# 🎨 UI
+/UI/ @ertonjm
+
+# 🧪 Testes (quando houver)
+/Tests/ @ertonjm
+
+# ⚙️ Build & CI/CD
+/.github/workflows/ @ertonjm
+/build/ @ertonjm
+
+# 📦 Dependências
+*.csproj @ertonjm
+*.sln @ertonjm
+packages.config @ertonjm
+

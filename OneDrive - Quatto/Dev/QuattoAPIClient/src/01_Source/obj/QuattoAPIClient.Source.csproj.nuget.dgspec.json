@@ -1,0 +1,148 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\Users\\ErtonLuisdeJesusMira\\OneDrive - Quatto\\Dev\\QuattoAPIClient\\src\\01_Source\\QuattoAPIClient.Source.csproj": {}
+  },
+  "projects": {
+    "C:\\Users\\ErtonLuisdeJesusMira\\OneDrive - Quatto\\Dev\\QuattoAPIClient\\src\\01_Source\\QuattoAPIClient.Source.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\ErtonLuisdeJesusMira\\OneDrive - Quatto\\Dev\\QuattoAPIClient\\src\\01_Source\\QuattoAPIClient.Source.csproj",
+        "projectName": "QuattoAPIClient.Source",
+        "projectPath": "C:\\Users\\ErtonLuisdeJesusMira\\OneDrive - Quatto\\Dev\\QuattoAPIClient\\src\\01_Source\\QuattoAPIClient.Source.csproj",
+        "packagesPath": "C:\\Users\\ErtonLuisdeJesusMira\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ErtonLuisdeJesusMira\\OneDrive - Quatto\\Dev\\QuattoAPIClient\\src\\01_Source\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\ErtonLuisdeJesusMira\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net472"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net472": {
+            "targetAlias": "net472",
+            "projectReferences": {
+              "C:\\Users\\ErtonLuisdeJesusMira\\OneDrive - Quatto\\Dev\\QuattoAPIClient\\src\\02_ConnectionManager\\QuattoAPIClient.ConnectionManager.csproj": {
+                "projectPath": "C:\\Users\\ErtonLuisdeJesusMira\\OneDrive - Quatto\\Dev\\QuattoAPIClient\\src\\02_ConnectionManager\\QuattoAPIClient.ConnectionManager.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
+      },
+      "frameworks": {
+        "net472": {
+          "targetAlias": "net472",
+          "dependencies": {
+            "System.Data.SqlClient": {
+              "target": "Package",
+              "version": "[4.8.6, )"
+            },
+            "System.Text.Json": {
+              "target": "Package",
+              "version": "[10.0.2, )"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.103\\RuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\ErtonLuisdeJesusMira\\OneDrive - Quatto\\Dev\\QuattoAPIClient\\src\\02_ConnectionManager\\QuattoAPIClient.ConnectionManager.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\ErtonLuisdeJesusMira\\OneDrive - Quatto\\Dev\\QuattoAPIClient\\src\\02_ConnectionManager\\QuattoAPIClient.ConnectionManager.csproj",
+        "projectName": "QuattoAPIClient.ConnectionManager",
+        "projectPath": "C:\\Users\\ErtonLuisdeJesusMira\\OneDrive - Quatto\\Dev\\QuattoAPIClient\\src\\02_ConnectionManager\\QuattoAPIClient.ConnectionManager.csproj",
+        "packagesPath": "C:\\Users\\ErtonLuisdeJesusMira\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ErtonLuisdeJesusMira\\OneDrive - Quatto\\Dev\\QuattoAPIClient\\src\\02_ConnectionManager\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\ErtonLuisdeJesusMira\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net472"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net472": {
+            "targetAlias": "net472",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
+      },
+      "frameworks": {
+        "net472": {
+          "targetAlias": "net472",
+          "dependencies": {
+            "Microsoft.Extensions.DependencyInjection": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Microsoft.Extensions.Logging": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Microsoft.Extensions.Logging.Console": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Newtonsoft.Json": {
+              "target": "Package",
+              "version": "[13.0.3, )"
+            },
+            "System.Net.Http": {
+              "target": "Package",
+              "version": "[4.3.4, )"
+            },
+            "System.Text.Json": {
+              "target": "Package",
+              "version": "[10.0.2, )"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.103\\RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

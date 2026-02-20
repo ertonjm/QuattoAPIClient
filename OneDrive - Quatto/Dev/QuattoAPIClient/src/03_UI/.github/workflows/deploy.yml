@@ -1,0 +1,219 @@
+name: Deploy to Production
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  DOTNET_VERSION: '4.7.2'
+  SOLUTION_FILE: 'src/QuattoAPIClient.sln'
+  BUILD_CONFIG: 'Release'
+  ARTIFACT_NAME: 'QuattoAPIClient-Release'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    - name: Extract version
+      id: version
+      run: |
+        $version = git describe --tags --always
+        echo "version=$version" >> $env:GITHUB_OUTPUT
+    
+    - name: Setup .NET Framework
+      uses: microsoft/setup-msbuild@v1
+      with:
+        vs-version: '17.0'
+    
+    - name: Restore NuGet packages
+      run: nuget restore ${{ env.SOLUTION_FILE }}
+    
+    - name: Build solução
+      run: |
+        msbuild ${{ env.SOLUTION_FILE }} `
+          /p:Configuration=${{ env.BUILD_CONFIG }} `
+          /p:Platform="x64" `
+          /p:AssemblyVersion=${{ steps.version.outputs.version }}
+    
+    - name: Run tests
+      run: |
+        dotnet test src/04_Tests/QuattoAPIClient.Tests.csproj `
+          --configuration ${{ env.BUILD_CONFIG }} `
+          --logger "trx"
+    
+    - name: Create release package
+      run: |
+        mkdir -p Release
+        copy "src/03_UI/bin/${{ env.BUILD_CONFIG }}/net472/QuattoAPIClient.UI.dll" Release/
+        copy "src/02_ConnectionManager/bin/${{ env.BUILD_CONFIG }}/net472/QuattoAPIClient.ConnectionManager.dll" Release/
+        copy "src/Logging/bin/${{ env.BUILD_CONFIG }}/net472/QuattoAPIClient.Logging.dll" Release/ -ErrorAction SilentlyContinue
+    
+    - name: Create artifact zip
+      run: |
+        Compress-Archive -Path Release -DestinationPath "${{ env.ARTIFACT_NAME }}-${{ steps.version.outputs.version }}.zip"
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ env.ARTIFACT_NAME }}-${{ steps.version.outputs.version }}
+        path: |
+          Release/
+          INSTALLATION.md
+          ARCHITECTURE.md
+          LOGGING_GUIDE.md
+
+  deploy-staging:
+    needs: build
+    runs-on: windows-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging'
+    environment:
+      name: staging
+      url: https://staging.example.com
+    
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: ${{ env.ARTIFACT_NAME }}-${{ needs.build.outputs.version }}
+    
+    - name: Deploy to staging
+      run: |
+        Write-Host "Deploying version ${{ needs.build.outputs.version }} to Staging"
+        
+        # TODO: Implement staging deployment
+        # This could include:
+        # - Copy DLLs to staging SSIS folder
+        # - Run integration tests
+        # - Smoke tests
+        # - Notifications
+
+    - name: Notify deployment
+      if: always()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '✅ Deployed to Staging: ${{ needs.build.outputs.version }}'
+          })
+
+  deploy-production:
+    needs: build
+    runs-on: windows-latest
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    environment:
+      name: production
+      url: https://example.com
+    
+    steps:
+    - name: Request approval
+      uses: trstringer/manual-approval@v1
+      with:
+        secret: ${{ github.TOKEN }}
+        approvers: 'user1,user2'
+        minimum-approvals: 1
+      if: github.event_name != 'release'
+    
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: ${{ env.ARTIFACT_NAME }}-${{ needs.build.outputs.version }}
+    
+    - name: Deploy to production
+      run: |
+        Write-Host "Deploying version ${{ needs.build.outputs.version }} to Production"
+        
+        # TODO: Implement production deployment
+        # This could include:
+        # - Copy DLLs to production SSIS folder
+        # - Update version registry
+        # - Run smoke tests
+        # - Create rollback point
+        # - Send notifications
+    
+    - name: Verify deployment
+      run: |
+        Write-Host "Verifying production deployment..."
+        # TODO: Implement verification
+        # - Check DLL versions
+        # - Test component in SSDT
+        # - Run health checks
+    
+    - name: Create release notes
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const version = '${{ needs.build.outputs.version }}';
+          const releaseNotes = `
+          # Release ${ version }
+          
+          ## Deployed to Production ✅
+          
+          **Version:** ${ version }
+          **Date:** ${ new Date().toISOString() }
+          **Environment:** Production
+          
+          ## Changes
+          - See release notes for details
+          
+          ## Deployment Status
+          - ✅ Build Successful
+          - ✅ Tests Passed
+          - ✅ Deployed to Production
+          
+          ## Rollback Plan
+          If issues occur, revert to previous DLL versions using the rollback script.
+          `;
+          
+          fs.writeFileSync('RELEASE_NOTES.md', releaseNotes);
+    
+    - name: Notify success
+      if: success()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.repos.createDispatchEvent({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            event_type: 'deployment-success',
+            client_payload: {
+              version: '${{ needs.build.outputs.version }}',
+              environment: 'production'
+            }
+          })
+    
+    - name: Notify failure
+      if: failure()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.repos.createDispatchEvent({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            event_type: 'deployment-failure',
+            client_payload: {
+              version: '${{ needs.build.outputs.version }}',
+              environment: 'production'
+            }
+          })

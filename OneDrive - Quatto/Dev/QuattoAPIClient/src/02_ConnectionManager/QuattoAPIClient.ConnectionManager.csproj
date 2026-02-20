@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net472</TargetFramework>
+		<AssemblyName>QuattoAPIClient.ConnectionManager</AssemblyName>
+		<RootNamespace>QuattoAPIClient.ConnectionManager</RootNamespace>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<FileVersion>1.0.0.0</FileVersion>
+		<Company>Quatto Consultoria</Company>
+		<Product>Quatto API Client for SSIS</Product>
+		<Description>Connection Manager for API authentication</Description>
+		<Copyright>Copyright © 2026 Quatto Consultoria</Copyright>
+		<LangVersion>latest</LangVersion>
+		<Nullable>enable</Nullable>
+		<!-- Prevent generation of duplicate assembly attributes when AssemblyInfo.cs is present -->
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<!-- Configure for x64 architecture to match SSIS runtime -->
+		<PlatformTarget>x64</PlatformTarget>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="app.config" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- SSIS Runtime References - SQL Server 2022 (SSIS 170) -->
+		<!-- Resolved from GAC at runtime using app.config binding redirects -->
+		<!-- Version set to 17.100.0.0 to match SQL Server 2022 -->
+		<Reference Include="Microsoft.SqlServer.ManagedDTS, Version=17.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91">
+			<SpecificVersion>True</SpecificVersion>
+		</Reference>
+		<Reference Include="Microsoft.SqlServer.DTSRuntimeWrap, Version=17.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91">
+			<SpecificVersion>True</SpecificVersion>
+		</Reference>
+		<Reference Include="Microsoft.SqlServer.DTSPipelineWrap, Version=17.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91">
+			<SpecificVersion>True</SpecificVersion>
+		</Reference>
+		<Reference Include="Microsoft.SqlServer.PipelineHost, Version=17.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91">
+			<SpecificVersion>True</SpecificVersion>
+		</Reference>
+		<!-- Additional SSIS Runtime assemblies needed for ConnectionManager implementation -->
+		<Reference Include="Microsoft.SqlServer.Dts.Design, Version=17.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91">
+			<SpecificVersion>True</SpecificVersion>
+		</Reference>
+		<Reference Include="Microsoft.SqlServer.Dts.Runtime, Version=17.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91">
+			<SpecificVersion>True</SpecificVersion>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="System.Net.Http" Version="4.3.4" />
+		<PackageReference Include="System.Text.Json" Version="10.0.2" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+	</ItemGroup>
+</Project>

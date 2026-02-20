@@ -1,0 +1,42 @@
+PROJECT STRUCTURE - QuattoAPIClient
+
+Resumo
+- Projeto multi-targeted para .NET Framework 4.7.2 com três áreas principais:
+  - `01_Source`  : Lógica de origem / componentes core (shared libraries)
+  - `02_ConnectionManager`: Connection Manager para autenticação (Bearer, ApiKey, OAuth2)
+  - `03_UI`      : Projeto Windows Forms para editor UI do componente SSIS
+
+O que aprender/observar
+- Dependências SSIS: vários projetos dependem de assemblies locais do SQL Server SDK (ManagedDTS, DTSRuntimeWrap, DTSPipelineWrap, PipelineHost). Esses caminhos são ambiente-específicos e exigem documentação para setup do desenvolvedor.
+- Nullable está habilitado (`<Nullable>enable</Nullable>`). Em projetos .NET Framework isso demanda atenção especial a inicialização de campos e uso de `?` quando aplicável.
+- Há duplicações históricas (ex.: definic?a?o do `OAuth2TokenManager` em mais de um ficheiro anteriormente) e geração dupla de atributos de assembly (resolvido com `<GenerateAssemblyInfo>false</GenerateAssemblyInfo>`).
+- Uso misto de `System.Text.Json` e `Newtonsoft.Json` pode causar inconsistência; convém padronizar uma biblioteca JSON.
+- Arquitetura: token manager implementado como classe reutilizável — bom para testes e reuso; ideal centralizar no projeto `02_ConnectionManager` e referenciar nos demais.
+
+Sugestões práticas (prioridade alta)
+1. Padronizar JSON: migrar totalmente para `System.Text.Json` (compatível com .NET Framework via pacote) e remover referências a `Newtonsoft.Json`.
+2. Limpar `bin/` e `obj/` em todos os projetos após remover duplicações e antes de rebuild.
+3. Garantir que os `HintPath` para assemblies SSIS estejam documentados em `docs/` e condicionais no `.csproj` (ou instruções de setup dev).
+4. Manter uma única definição de `OAuth2TokenManager` (já unificada). Evitar classes internas duplicadas.
+5. Usar `<GenerateAssemblyInfo>false</GenerateAssemblyInfo>` quando existir `Properties/AssemblyInfo.cs` para evitar CS0579.
+6. Substituir `Console.WriteLine` por uma abstração de logging (interface `ILogger`) e permitir injeção para testes; configs devem redigir segredos.
+
+Sugestões para médio prazo
+- Adicionar projeto de testes unitários (`tests/QuattoAPIClient.Tests`) e mocks para `HttpClient`.
+- Criar arquivo `.editorconfig` e regras de estilo (tabs/spaces, naming, nullable conventions).
+- Automatizar build via CI (GitHub Actions) com passos: restore, build (sln), run unit tests, produzir artefatos.
+- Documentar processo de deploy do componente no SSIS Toolbox/GAC em `docs/DEPLOYMENT.md`.
+
+Checklist de verificação antes do PR
+- [ ] Build limpo localmente (sem warnings críticos de nullable)
+- [ ] Removidas referências a `Newtonsoft.Json` (ou justificadas)
+- [ ] `Properties/AssemblyInfo.cs` consistente com `.csproj`
+- [ ] Paths de references SSIS documentados
+- [ ] Testes unitários básicos adicionados (token manager, parsing de JSON)
+
+Arquivo recomendado a adicionar
+- `docs/SETUP-SSIS.md` — instruções para apontar `HintPath` dos assemblies SQL Server/SSIS no ambiente do desenvolvedor.
+- `.editorconfig` — regras de estilo.
+- `PROJECT_STRUCTURE.txt` (este arquivo) no root para referência rápida.
+
+Se desejar, eu atualizo automaticamente o README/docs e removo todas as referências a `Newtonsoft.Json` no workspace (ou aplico somente em `02_ConnectionManager`). Diga qual opção prefere.

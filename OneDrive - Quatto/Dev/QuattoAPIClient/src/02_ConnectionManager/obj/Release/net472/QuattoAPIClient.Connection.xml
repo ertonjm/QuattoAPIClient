@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>QuattoAPIClient.Connection</name>
+    </assembly>
+    <members>
+        <member name="T:QuattoAPIClient.Connection.OAuth2TokenManager">
+            <summary>
+            Gerencia obtenção e cache de access token (OAuth2 client_credentials),
+            com refresh proativo quando próximo da expiração e controle de concorrência.
+            </summary>
+        </member>
+        <member name="M:QuattoAPIClient.Connection.OAuth2TokenManager.GetAccessToken">
+            <summary>
+            Retorna um access token válido. Se estiver próximo de expirar, renova antes.
+            </summary>
+        </member>
+        <member name="M:QuattoAPIClient.Connection.OAuth2TokenManager.ForceRefresh">
+            <summary>
+            Força refresh (usado, por exemplo, após um 401).
+            </summary>
+        </member>
+        <member name="T:QuattoAPIClient.Connection.TokenRefreshHandler">
+             <summary>
+             DelegatingHandler que:
+             1) injeta um token Bearer válido antes de cada chamada (via OAuth2TokenManager),
+             2) renova proativamente se o token estiver próximo do vencimento,
+             3) em caso de 401, força um refresh e reenvia a requisição uma única vez.
+            
+             Observações:
+             - Implementação síncrona para compatibilidade com SSIS (.NET Framework 4.7.2).
+             - Não registra (loga) segredos. Evite imprimir tokens em logs.
+             - Retry é intencionalmente 1x para prevenir loops em credenciais inválidas.
+             </summary>
+        </member>
+        <member name="M:QuattoAPIClient.Connection.TokenRefreshHandler.#ctor(QuattoAPIClient.Connection.OAuth2TokenManager,System.Boolean)">
+            <param name="tokenManager">Instância responsável por obter/renovar o access token.</param>
+            <param name="retryOnUnauthorized">
+            Se true, ao receber 401 o handler força refresh e reenvia a requisição uma vez.
+            </param>
+        </member>
+        <member name="M:QuattoAPIClient.Connection.TokenRefreshHandler.SendAsync(System.Net.Http.HttpRequestMessage,System.Threading.CancellationToken)">
+            <summary>
+            Envia a requisição garantindo token válido e aplicação do retry em caso de 401.
+            Implementado de forma assíncrona usando SendAsync.
+            </summary>
+        </member>
+    </members>
+</doc>

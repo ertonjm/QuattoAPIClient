@@ -1,0 +1,85 @@
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+<PropertyGroup>
+  <TargetFramework>net472</TargetFramework>
+  <UseWindowsForms>true</UseWindowsForms>
+  <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  <AssemblyName>QuattoAPIClient.UI</AssemblyName>
+  <RootNamespace>QuattoAPIClient.UI</RootNamespace>
+  <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  <FileVersion>1.0.0.0</FileVersion>
+  <Company>Quatto Consultoria</Company>
+  <Product>Quatto API Client for SSIS</Product>
+  <Description>User interface for Corporate API Source component</Description>
+  <Copyright>Copyright © 2026 Quatto Consultoria</Copyright>
+  <LangVersion>latest</LangVersion>
+  <Nullable>enable</Nullable>
+  <NoWarn>$(NoWarn);MSB3305;MSB3277</NoWarn>
+  <!-- Configure for x64 architecture to match SSIS runtime -->
+  <PlatformTarget>x64</PlatformTarget>
+</PropertyGroup>
+<ItemGroup>
+  <Compile Remove="FakesAssemblies\**" />
+  <EmbeddedResource Remove="FakesAssemblies\**" />
+  <None Remove="FakesAssemblies\**" />
+</ItemGroup>
+  <ItemGroup>
+    <COMReference Include="SqlDest">
+      <WrapperTool>tlbimp</WrapperTool>
+      <VersionMinor>0</VersionMinor>
+      <VersionMajor>1</VersionMajor>
+      <Guid>1afefb81-b3a0-4836-b599-297a6487a41c</Guid>
+      <Lcid>0</Lcid>
+      <Isolated>false</Isolated>
+      <EmbedInteropTypes>true</EmbedInteropTypes>
+    </COMReference>
+    <COMReference Include="OleDbSrc">
+      <WrapperTool>tlbimp</WrapperTool>
+      <VersionMinor>0</VersionMinor>
+      <VersionMajor>1</VersionMajor>
+      <Guid>b67cdfa6-a961-4f6c-a115-04fb669c6c5b</Guid>
+      <Lcid>0</Lcid>
+      <Isolated>false</Isolated>
+      <EmbedInteropTypes>true</EmbedInteropTypes>
+    </COMReference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.0" />
+    <PackageReference Include="Microsoft.QualityTools.Testing.Fakes" Version="18.1.1" />
+    <PackageReference Include="Microsoft.SqlServer.Server" Version="1.0.0" />
+    <PackageReference Include="Microsoft.SqlServer.TransactSql.ScriptDom" Version="170.168.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- SSIS Runtime assemblies from GAC -->
+    <Reference Include="Microsoft.SqlServer.DTSPipelineWrap, Version=17.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91">
+      <EmbedInteropTypes>true</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Microsoft.SqlServer.DTSRuntimeWrap, Version=17.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91">
+      <EmbedInteropTypes>true</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Microsoft.SqlServer.ManagedDTS, Version=17.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91">
+      <EmbedInteropTypes>true</EmbedInteropTypes>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\02_ConnectionManager\QuattoAPIClient.ConnectionManager.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalDesignTimeBuildInput Remove="FakesAssemblies\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Fakes\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include=".github\workflows\build-test.yml" />
+    <None Include=".github\workflows\deploy.yml" />
+    <None Include="04_Tests\QuattoAPIClient.Tests.csproj" />
+  </ItemGroup>
+</Project>

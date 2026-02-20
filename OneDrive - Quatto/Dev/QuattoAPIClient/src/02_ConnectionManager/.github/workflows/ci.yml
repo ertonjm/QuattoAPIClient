@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      sqlServerVersion:
+        description: 'SQL Server version for build hint paths (140|150|160)'
+        required: false
+        default: '150'
+
+jobs:
+  build:
+    name: Build (Windows, .NET Framework / net472)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Chocolatey packages (nuget)
+        shell: pwsh
+        run: |
+          choco feature enable -n=allowGlobalConfirmation
+          choco install nuget.commandline -y
+
+      - name: Check for SSIS assemblies on runner
+        shell: pwsh
+        run: |
+          $paths = @(
+            'C:\\Program Files\\Microsoft SQL Server\\150\\DTS\\Binn\\Microsoft.SqlServer.ManagedDTS.dll',
+            'C:\\Program Files\\Microsoft SQL Server\\140\\DTS\\Binn\\Microsoft.SqlServer.ManagedDTS.dll',
+            'C:\\Program Files\\Microsoft SQL Server\\160\\DTS\\Binn\\Microsoft.SqlServer.ManagedDTS.dll'
+          )
+          $found = $false
+          foreach ($p in $paths) { if (Test-Path $p) { Write-Host "Found SSIS assembly: $p"; $found = $true; break } }
+          if ($found) { echo "SSIS_PRESENT=true" >> $env:GITHUB_ENV } else { echo "SSIS_PRESENT=false" >> $env:GITHUB_ENV; Write-Host "SSIS assemblies not found on runner. Build will use no-SSIS stubs." }
+
+      - name: Setup .NET SDK (CLI for restore/build)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore NuGet packages
+        shell: pwsh
+        run: |
+          $projects = Get-ChildItem -Path src -Filter *.csproj -Recurse | Select-Object -ExpandProperty FullName
+          if (-not $projects) { Write-Error "No .csproj files found under src/"; exit 1 }
+          foreach ($p in $projects) {
+            Write-Host "Restoring $p"
+            dotnet restore $p
+            if ($LASTEXITCODE -ne 0) { Write-Error "dotnet restore failed for $p"; exit $LASTEXITCODE }
+          }
+
+      - name: Build (conditional SSIS)
+        shell: pwsh
+        run: |
+          $sqlVer = '${{ github.event.inputs.sqlServerVersion }}'
+          if ([string]::IsNullOrWhiteSpace($sqlVer)) { $sqlVer = '150' }
+          $projects = Get-ChildItem -Path src -Filter *.csproj -Recurse | Select-Object -ExpandProperty FullName
+          if (-not $projects) { Write-Error "No .csproj files found under src/"; exit 1 }
+          foreach ($p in $projects) {
+            if ($env:SSIS_PRESENT -eq 'true') {
+              Write-Host "Building $p with SSIS types (DEFINE USE_SSIS) - SqlServerVersion=$sqlVer"
+              dotnet build $p -c Release -p:SqlServerVersion=$sqlVer -p:DefineConstants="USE_SSIS"
+            } else {
+              Write-Host "Building $p without SSIS types (using stubs) - SqlServerVersion=$sqlVer"
+              dotnet build $p -c Release -p:SqlServerVersion=$sqlVer
+            }
+            if ($LASTEXITCODE -ne 0) { Write-Error "dotnet build failed for $p"; exit $LASTEXITCODE }
+          }
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuattoAPIClient-Bins
+          path: |
+            src/**/bin/Release/

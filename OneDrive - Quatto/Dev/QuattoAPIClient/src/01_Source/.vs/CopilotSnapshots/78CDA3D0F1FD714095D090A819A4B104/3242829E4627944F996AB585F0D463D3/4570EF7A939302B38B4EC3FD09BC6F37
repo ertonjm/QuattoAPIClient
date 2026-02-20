@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+  <runtime>
+    <!-- Assembly Binding Redirects for SSIS Components -->
+    <!-- These help resolve SSIS assembly versions when multiple versions are installed -->
+    <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
+      <!-- Redirect any version of Microsoft.SqlServer.ManagedDTS to the version we need -->
+      <dependentAssembly>
+        <assemblyIdentity name="Microsoft.SqlServer.ManagedDTS" publicKeyToken="89845dcd8080cc91" culture="neutral" />
+        <bindingRedirect oldVersion="0.0.0.0-15.0.0.0" newVersion="15.0.0.0" />
+      </dependentAssembly>
+      <dependentAssembly>
+        <assemblyIdentity name="Microsoft.SqlServer.DTSRuntimeWrap" publicKeyToken="89845dcd8080cc91" culture="neutral" />
+        <bindingRedirect oldVersion="0.0.0.0-15.0.0.0" newVersion="15.0.0.0" />
+      </dependentAssembly>
+      <dependentAssembly>
+        <assemblyIdentity name="Microsoft.SqlServer.DTSPipelineWrap" publicKeyToken="89845dcd8080cc91" culture="neutral" />
+        <bindingRedirect oldVersion="0.0.0.0-15.0.0.0" newVersion="15.0.0.0" />
+      </dependentAssembly>
+    </assemblyBinding>
+  </runtime>
+</configuration>

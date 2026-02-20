@@ -1,0 +1,120 @@
+# Git Attributes Configuration for Quatto API Client
+
+# Auto detect text files and normalize line endings to LF
+* text=auto
+
+# Explicitly declare text files you want to always be normalized and converted
+# to native line endings on checkout.
+*.cs text eol=crlf
+*.csproj text eol=crlf
+*.sln text eol=crlf
+*.vb text eol=crlf
+*.vbproj text eol=crlf
+*.xaml text eol=crlf
+*.xaml.cs text eol=crlf
+*.xml text eol=crlf
+*.config text eol=crlf
+*.app.config text eol=crlf
+*.resx text eol=crlf
+*.settings text eol=crlf
+
+# Markdown
+*.md text eol=lf
+*.markdown text eol=lf
+README text eol=lf
+
+# PowerShell
+*.ps1 text eol=crlf
+*.psd1 text eol=crlf
+*.psm1 text eol=crlf
+
+# Batch
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Shell
+*.sh text eol=lf
+*.bash text eol=lf
+*.zsh text eol=lf
+
+# SQL
+*.sql text eol=crlf
+
+# YAML
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# JSON
+*.json text eol=lf
+*.jsonc text eol=lf
+
+# TOML
+*.toml text eol=lf
+
+# INI
+*.ini text eol=crlf
+
+# Properties
+*.properties text eol=lf
+
+# Documentation
+*.txt text eol=lf
+AUTHORS text eol=lf
+CHANGELOG text eol=lf
+CHANGELOG.md text eol=lf
+CONTRIBUTING text eol=lf
+CONTRIBUTING.md text eol=lf
+GETTING_STARTED.md text eol=lf
+GIT_WORKFLOW.md text eol=lf
+CODE_OF_CONDUCT.md text eol=lf
+LICENSE text eol=lf
+LICENSE.md text eol=lf
+MAINTAINERS text eol=lf
+MAINTAINERS.md text eol=lf
+NOTICE text eol=lf
+
+# Binary files
+*.dll binary
+*.exe binary
+*.so binary
+*.dylib binary
+*.pdb binary
+*.mdb binary
+
+# Images
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg text eol=lf
+
+# Packages
+*.nupkg binary
+*.zip binary
+*.tar binary
+*.gz binary
+*.7z binary
+*.rar binary
+
+# IDE
+.vs/ export-ignore
+.vscode/ export-ignore
+.idea/ export-ignore
+*.user export-ignore
+*.suo export-ignore
+
+# OS
+.DS_Store export-ignore
+Thumbs.db export-ignore
+
+# Build
+bin/ export-ignore
+obj/ export-ignore
+Release/ export-ignore
+Debug/ export-ignore
+*.log export-ignore
+
+# Diff/Merge
+*.diff merge=union
+*.patch merge=union

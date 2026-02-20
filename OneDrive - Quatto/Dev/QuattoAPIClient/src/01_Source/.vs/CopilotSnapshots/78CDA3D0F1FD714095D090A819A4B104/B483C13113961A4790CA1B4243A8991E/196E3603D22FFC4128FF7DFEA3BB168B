@@ -1,0 +1,53 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net472</TargetFramework>
+		<AssemblyName>QuattoAPIClient.ConnectionManager</AssemblyName>
+		<RootNamespace>QuattoAPIClient.ConnectionManager</RootNamespace>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<FileVersion>1.0.0.0</FileVersion>
+		<Company>Quatto Consultoria</Company>
+		<Product>Quatto API Client for SSIS</Product>
+		<Description>Connection Manager for API authentication</Description>
+		<Copyright>Copyright © 2026 Quatto Consultoria</Copyright>
+		<LangVersion>latest</LangVersion>
+		<Nullable>enable</Nullable>
+		<!-- Prevent generation of duplicate assembly attributes when AssemblyInfo.cs is present -->
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="app.config" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- SSIS Runtime References - SQL Server 2022 (SSIS 170) from Visual Studio installation -->
+		<!-- Installed in: C:\Program Files\Microsoft Visual Studio\18\Enterprise\Common7\IDE\CommonExtensions\Microsoft\SSIS\170\Binn\ -->
+		<Reference Include="Microsoft.SqlServer.ManagedDTS">
+			<HintPath>C:\Program Files\Microsoft Visual Studio\18\Enterprise\Common7\IDE\CommonExtensions\Microsoft\SSIS\170\Binn\Microsoft.SqlServer.ManagedDTS.dll</HintPath>
+			<SpecificVersion>False</SpecificVersion>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="Microsoft.SqlServer.DTSRuntimeWrap">
+			<HintPath>C:\Program Files\Microsoft Visual Studio\18\Enterprise\Common7\IDE\CommonExtensions\Microsoft\SSIS\170\Binn\Microsoft.SqlServer.DTSRuntimeWrap.dll</HintPath>
+			<SpecificVersion>False</SpecificVersion>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="Microsoft.SqlServer.DTSPipelineWrap">
+			<HintPath>C:\Program Files\Microsoft Visual Studio\18\Enterprise\Common7\IDE\CommonExtensions\Microsoft\SSIS\170\Binn\Microsoft.SqlServer.DTSPipelineWrap.dll</HintPath>
+			<SpecificVersion>False</SpecificVersion>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="Microsoft.SqlServer.PipelineHost">
+			<HintPath>C:\Program Files\Microsoft Visual Studio\18\Enterprise\Common7\IDE\CommonExtensions\Microsoft\SSIS\170\Binn\Microsoft.SqlServer.PipelineHost.dll</HintPath>
+			<SpecificVersion>False</SpecificVersion>
+			<Private>False</Private>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="System.Net.Http" Version="4.3.4" />
+		<PackageReference Include="System.Text.Json" Version="10.0.2" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+	</ItemGroup>
+</Project>

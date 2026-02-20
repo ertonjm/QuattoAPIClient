@@ -1,0 +1,48 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net472</TargetFramework>
+		<AssemblyName>QuattoAPIClient.Source</AssemblyName>
+		<RootNamespace>QuattoAPIClient.Source</RootNamespace>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<FileVersion>1.0.0.0</FileVersion>
+		<Company>Quatto Consultoria</Company>
+		<Product>Quatto API Client for SSIS</Product>
+		<Description>Custom SSIS component for REST API consumption with retry, pagination, and incremental loading</Description>
+		<Copyright>Copyright © 2026 Quatto Consultoria</Copyright>
+		<Authors>Erton Miranda, Quatto Team</Authors>
+		<LangVersion>latest</LangVersion>
+		<Nullable>enable</Nullable>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- SSIS References - Ajuste os caminhos conforme sua instalação -->
+		<Reference Include="Microsoft.SqlServer.DTSPipelineWrap">
+			<HintPath>C:\Program Files\Microsoft SQL Server\150\SDK\Assemblies\Microsoft.SqlServer.DTSPipelineWrap.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="Microsoft.SqlServer.PipelineHost">
+			<HintPath>C:\Program Files\Microsoft SQL Server\150\DTS\PipelineComponents\Microsoft.SqlServer.PipelineHost.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="Microsoft.SqlServer.DTSRuntimeWrap">
+			<HintPath>C:\Program Files\Microsoft SQL Server\150\SDK\Assemblies\Microsoft.SqlServer.DTSRuntimeWrap.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="Microsoft.SqlServer.ManagedDTS">
+			<HintPath>C:\Program Files\Microsoft SQL Server\150\DTS\Binn\Microsoft.SqlServer.ManagedDTS.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- Atualize para versões seguras dos pacotes -->
+		<PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
+		<PackageReference Include="System.Text.Json" Version="8.0.4" />
+		<!-- Adicione outros pacotes conforme necessidade -->
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="C:\Users\ErtonLuisdeJesusMira\OneDrive - Quatto\Dev\QuattoAPIClient\src\02_ConnectionManager\QuattoAPIClient.ConnectionManager.csproj" />
+	</ItemGroup>
+</Project>
